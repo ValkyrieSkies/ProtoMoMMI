@@ -67,7 +67,7 @@ async def on_message(message):
             await message.channel.send('No players are currently online.')
             
     elif message.content.startswith('!help'):
-        await message.channel.send('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\s what I **can** do: !status, !who, !help, $bitch!!!, $flarg, $grape, $manylo, $meta, $shotgun.')   
+        await message.channel.send('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: *!status, !who, !help, $bitch!!!, $flarg, $grape, $manylo, $meta, $shotgun*.')   
            
     elif message.content.startswith('$manylo'):
         await message.channel.send('Fuckin\' shitman\'s like manylo are the reason this server struggles with pop. The players aren\'t bad, most of you are decent folk, the Admins aren\'t that bad, most are cool but that fucking SHITHEAD motherfucker is what makes people not enjoy the fucking game anymore.')
