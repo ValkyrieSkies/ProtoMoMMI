@@ -13,7 +13,9 @@ intents.message_content = True
 
 client = discord.Client(intents=intents)
 
+#url for the json file with current round info
 statusurl = "https://ss13.moe/serverinfo/serverinfo.json"
+
 dirname = os.path.dirname(__file__)
 localstatusfile = os.path.join(dirname, 'localstatus.json')
 
@@ -40,7 +42,7 @@ async def on_message(message):
         outputmsg = outputmsg.replace("%3a", ":")
         await message.channel.send(outputmsg)
         
-    #returns a list of the current players
+    #returns a list of the current active players
     elif message.content.startswith('!who'):
         try:
             os.remove(localstatusfile)
@@ -64,4 +66,5 @@ async def on_message(message):
         else:
             await message.channel.send('No players are currently online.')
 
+#create a file named ".env" in the same folder as this and just add a line that's "TOKEN=yourtokenhere"
 client.run(TOKEN)
