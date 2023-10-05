@@ -2,6 +2,7 @@ import discord
 import json
 import wget
 import os
+import random
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -42,6 +43,19 @@ async def on_message(message):
         outputmsg = outputmsg.replace("%3a", ":")
         await message.channel.send(outputmsg)
         
+    #As above but for the test server
+    elif message.content.startswith('!teststatus'):
+        try:
+            os.remove(localstatusfile)
+        except OSError:
+            pass
+        wget.download(statusurl, 'localstatus.json')
+        statusdict = json.load(open('localstatus.json', 'r'))
+        outputmsg = '[Test Server] **' + statusdict[1]["players"] + '** players online, Current Map is **' + statusdict[1]["map_name"] + '** on **' + statusdict[1]["mode"] + '**, Station Time: **' + statusdict[1]["station_time"] + '**'
+        outputmsg = outputmsg.replace("+", " ")
+        outputmsg = outputmsg.replace("%3a", ":")
+        await message.channel.send(outputmsg)
+        
     #returns a list of the current active players
     elif message.content.startswith('!who'):
         try:
@@ -66,8 +80,45 @@ async def on_message(message):
         else:
             await message.channel.send('No players are currently online.')
             
+    #As above but for the test server
+    elif message.content.startswith('!testwho'):
+        try:
+            os.remove(localstatusfile)
+        except OSError:
+            pass
+        wget.download(statusurl, 'localstatus.json')
+        statusdict = json.load(open('localstatus.json', 'r'))
+        playercount = int(statusdict[1]["players"])
+        if playercount > 0:
+        
+            playerticker = 0
+            outputmsg = 'Current active players: ';
+            while playerticker < (playercount - 1):
+                playerkey = 'player' + str(playerticker)
+                outputmsg += statusdict[1][playerkey] + ', '
+                playerticker += 1;
+            playerkey = 'player' + str(playerticker)
+            outputmsg += statusdict[1][playerkey]
+            outputmsg = outputmsg.replace("+", " ")
+            await message.channel.send(outputmsg)
+        else:
+            await message.channel.send('No players are currently online.')
+           
+    elif message.content.startswith('!coinflip'):
+        if(random.randint(1, 2) == 1):
+            outputmsg = 'Heads'
+        else:
+            outputmsg = 'Tails'
+        await message.channel.send('🪙 Flipping a Coin: It\'s **' + outputmsg + '**!')  
+           
+    elif message.content.startswith('!d6'):
+        await message.channel.send('🎲 Rolling a d6: **' + str(random.randint(1, 6)) + '**')        
+            
+    elif message.content.startswith('!d20'):
+        await message.channel.send('🎲 Rolling a d20: **' + str(random.randint(1, 20)) + '**')
+            
     elif message.content.startswith('!help'):
-        await message.channel.send('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: *!status, !who, !help, $bitch!!!, $flarg, $grape, $manylo, $meta, $shotgun*.')   
+        await message.channel.send('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: *!status, !who, !help, !coinflip, !d6, !d20, $bitch!!!, $flarg, $grape, $manylo, $meta, $shotgun*.')   
            
     elif message.content.startswith('$manylo'):
         await message.channel.send('Fuckin\' shitman\'s like manylo are the reason this server struggles with pop. The players aren\'t bad, most of you are decent folk, the Admins aren\'t that bad, most are cool but that fucking SHITHEAD motherfucker is what makes people not enjoy the fucking game anymore.')
