@@ -66,9 +66,9 @@ async def on_message(message):
         else:
             await message.channel.send('No players are currently online.')
             
-    elif message.content.startswith('$manylo'):
-        await message.channel.send('Fuckin\' shitman\'s like manylo are the reason this server struggles with pop. The players aren\'t bad, most of you are decent folk, the Admins aren\'t that bad, most are cool but that fucking SHITHEAD motherfucker is what makes people not enjoy the fucking game anymore.')
-        
+    elif message.content.startswith('!help'):
+        await message.channel.send('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\s what I **can** do: !status, !who, !help, $bitch!!!, $flarg, $grape, $manylo, $meta, $shotgun.')   
+           
     elif message.content.startswith('$manylo'):
         await message.channel.send('Fuckin\' shitman\'s like manylo are the reason this server struggles with pop. The players aren\'t bad, most of you are decent folk, the Admins aren\'t that bad, most are cool but that fucking SHITHEAD motherfucker is what makes people not enjoy the fucking game anymore.')
         
@@ -83,6 +83,11 @@ async def on_message(message):
         
     elif message.content.startswith('$bitch!!!'):
         await message.channel.send('https://media.tenor.com/QPgNJ7ZEFHsAAAAC/swag-cat.gif')
+        
+    elif message.content.startswith('$meta'):
+        await message.channel.send('https://media.discordapp.net/attachments/1021562311074390066/1026672867645071420/unknown.png?width=682&height=637')
+        
+    
     
 
 #create a file named ".env" in the same folder as this and just add a line that's "TOKEN=yourtokenhere"
