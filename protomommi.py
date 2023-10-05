@@ -92,7 +92,7 @@ async def on_message(message):
         if playercount > 0:
         
             playerticker = 0
-            outputmsg = 'Current active players: ';
+            outputmsg = '[Test Server] Current active players: ';
             while playerticker < (playercount - 1):
                 playerkey = 'player' + str(playerticker)
                 outputmsg += statusdict[1][playerkey] + ', '
@@ -102,7 +102,7 @@ async def on_message(message):
             outputmsg = outputmsg.replace("+", " ")
             await message.channel.send(outputmsg)
         else:
-            await message.channel.send('No players are currently online.')
+            await message.channel.send('[Test Server] No players are currently online.')
            
     elif message.content.startswith('!coinflip'):
         if(random.randint(1, 2) == 1):
@@ -118,7 +118,7 @@ async def on_message(message):
         await message.channel.send('🎲 Rolling a d20: **' + str(random.randint(1, 20)) + '**')
             
     elif message.content.startswith('!help'):
-        await message.channel.send('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: *!status, !who, !help, !coinflip, !d6, !d20, $bitch!!!, $flarg, $grape, $manylo, $meta, $shotgun*.')   
+        await message.channel.send('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: *!status, !who, !teststatus, !testwho, !help, !coinflip, !d6, !d20, $bitch!!!, $bobo, $flarg, $grape, $manylo, $meta, $revealantags, $shotgun, $strangle*.')   
            
     elif message.content.startswith('$manylo'):
         await message.channel.send('Fuckin\' shitman\'s like manylo are the reason this server struggles with pop. The players aren\'t bad, most of you are decent folk, the Admins aren\'t that bad, most are cool but that fucking SHITHEAD motherfucker is what makes people not enjoy the fucking game anymore.')
@@ -138,8 +138,96 @@ async def on_message(message):
     elif message.content.startswith('$meta'):
         await message.channel.send('https://media.discordapp.net/attachments/1021562311074390066/1026672867645071420/unknown.png?width=682&height=637')
         
-    
-    
+    elif message.content.startswith('$strangle'):
+        await message.channel.send('https://media.discordapp.net/attachments/1021561310728699905/1045606728378630174/unknown.png?width=846&height=211')
+
+    elif message.content.startswith('$bobo'):
+        await message.channel.send('https://media.tenor.com/gsD143k10RcAAAAC/bobo-reddit.gif')
+       
+    elif message.content.startswith('$revealantags'):
+        match random.randint(1, 40):
+            case 1:
+                await message.channel.send("IT\S **REVS**!")
+            case 2:
+                await message.channel.send("IT\'S **CULT**!")
+            case 3:
+                await message.channel.send("IT\'S **MALF**!")
+            case 4:
+                await message.channel.send("IT\'S **EXTENDED**!")
+            case 5:
+                await message.channel.send("IT\'S **NUKE OPS**!")
+            case 6:
+                await message.channel.send("IT\'S **RAGIN\' MAGES**!")
+            case 7:
+                await message.channel.send("IT\'S **TRAITOR-LINGS**!")
+            case 8:
+                await message.channel.send("IT\'S **VAMPSTENDED**!")
+            case 9:
+                await message.channel.send("IT\'S **WIZARD**!")
+            case 10:
+                await message.channel.send("IT\'S **MONKEY MADNESS**!")
+            case 11:
+                await message.channel.send("IT\'S **REVSQUAD**!")
+            case 12:
+                await message.channel.send("IT\'S **HIGHLANDER**!")
+            case 13:
+                await message.channel.send("IT\'S **BLOB**!")
+            case 14:
+                await message.channel.send("IT\'S **DORF**!")
+            case 15:
+                await message.channel.send("IT\'S **AN SS14 PLAYTEST**!")
+            case 16:
+                await message.channel.send("IT\'S **CHALLENGERS**!")
+            case 17:
+                await message.channel.send("IT\'S **TRAITORS**!")
+            case 18:
+                await message.channel.send("IT\'S **ANTAG MADNESS**!")
+            case 19:
+                await message.channel.send("IT\'S **GORILLIONAIRES & BOOTYBORGS**!")
+            case 20:
+                await message.channel.send("IT\'S **TAG MODE**!")
+            case 21:
+                await message.channel.send("IT\'S **ADMINBUS**!")
+            case 22:
+                await message.channel.send("IT\'S **HIGH RP**!")
+            case 23:
+                await message.channel.send("IT\'S **COLONIAL MARINES**!")
+            case 24:
+                await message.channel.send("IT\'S **SPACE NINJA**!")
+            case 25:
+                await message.channel.send("IT\'S **TIME AGENTS**!")
+            case 26:
+                await message.channel.send("IT\'S **READIED UP FOR FUN**!")
+            case 27:
+                await message.channel.send("IT\'S **METEORS**!")
+            case 28:
+                await message.channel.send("IT\'S **LOOSE CATBEAST**!")
+            case 29:
+                await message.channel.send("IT\'S **CHANGELINGS**!")
+            case 30:
+                await message.channel.send("IT\'S **CLOCKWORK CULT**!")
+            case 31:
+                await message.channel.send("IT\'S **DEATH SQUAD**!")
+            case 32:
+                await message.channel.send("IT\'S **AN AWAY MISSION**!")
+            case 33:
+                await message.channel.send("IT\'S **GRUE INFESTATION**!")
+            case 34:
+                await message.channel.send("IT\'S **PULSE DEMONS**!")
+            case 35:
+                await message.channel.send("IT\'S **AUTOTRAITOR**!")
+            case 36:
+                await message.channel.send("IT\'S **SOKOBAN**!")
+            case 37:
+                await message.channel.send("IT\'S **BOMBERMAN**!")
+            case 38:
+                await message.channel.send("IT\'S **SURVIVORS**!")
+            case 39:
+                await message.channel.send("IT\'S **HARDCORE MODE**!")
+            case 40:
+                await message.channel.send("IT\'S **CRASHED!**!")
+            case _:
+                await message.channel.send('It\'s *Malcolm in the Middle*.')
 
 #create a file named ".env" in the same folder as this and just add a line that's "TOKEN=yourtokenhere"
 client.run(TOKEN)
