@@ -127,33 +127,64 @@ async def on_message(message):
         prnumber = message.content
         prnumber = prnumber.replace('[', '')
         prnumber = prnumber.replace(']', '')
+        
         try:
             os.remove(localissuesfile)
         except OSError:
             pass
         wget.download(gitissuesurl, 'localissues.json')
         issuedict = json.load(open('localissues.json', 'r', encoding="utf-8"))
+        
         try:
             os.remove(localprfile)
         except OSError:
             pass
-        wget.download(gitissuesurl, 'localpr.json')
+        wget.download(gitprurl, 'localpr.json')
         prdict = json.load(open('localpr.json', 'r', encoding="utf-8"))
-        if prdict[0]["number"] > issuedict[0]["number"]:
+        
+        if int(prdict[0]["number"]) >= int(issuedict[0]["number"]):
             gittotal = prdict[0]["number"]
         else:
             gittotal = issuedict[0]["number"]
-        if len(prnumber) <= gittotal:
-            try:
+            
+        if len(prnumber) <= len(str(gittotal)):
+            #try:
                 if int(prnumber) <= gittotal and int(prnumber) > 0:
-                    outputmsg = giturl + 'issues/' + prnumber
-                    await message.channel.send(outputmsg)
+                    gitposturl = gitissuesurl + '/' + prnumber
+                    try:
+                        os.remove(localissuesfile)
+                    except OSError:
+                        pass
+                    wget.download(gitposturl, 'localissues.json')
+                    postdict = json.load(open('localissues.json', 'r', encoding="utf-8"))
+                    embeddesc = postdict["body"]
+                    if len(postdict["body"]) >= 4096:
+                        embeddesc = embeddesc[:4092] + '...'
+                    embedVar = discord.Embed(title= "[" + prnumber + "] " + postdict["title"], description=embeddesc, color=0x03bf16, url=postdict["url"])
+                    embedVar.set_thumbnail(url="http://ss13.moe/img/vgstation-logo2.png")
+                    embedVar.add_field(name="Comments", value=postdict["comments"], inline=False)
+                    embedVar.add_field(name="Upvotes", value=postdict["reactions"]["+1"], inline=True)
+                    embedVar.add_field(name="Downvotes", value=postdict["reactions"]["-1"], inline=True)
+                    embedVar.set_footer(text=postdict["user"]["login"])
+                    await message.channel.send(embed=embedVar)
                 else:
+                    print("exit point 3")
                     return
-            except:
-                return
+            #except:
+            #    print("exit point 2")
+            #    return
         else:
+            print("exit point 1")
             return
+
+    elif message.content.startswith('$embedtest'):
+        embedVar = discord.Embed(title="[696969] Removes Assistant", description="(WEB REPORT BY: doctorsergius REMOTE: 206.221.180.138:7777)\n# Revision\r\nf40bd5f75074f0e6b9d2631a138a9d7ba6fc1884\r\n\r\n# Description\r\nPlants with the no reactions trait still seem to allow reactions to happen, at least under certain circunstances\r\n# Steps to Reproduce\r\nGot blood tomato seeds, spliced them with no reactions and clonexadone production genes from fossil seeds, spliced together they grow tomatoes that contain clonex and blood in a stable manner past the amounts where they would make meat on harvest, but the no reactions trait seems to stop working past 110 potency or so\r\n# What you Expected\r\nTomatoes that make 10+ units of synthmeat when eaten/ thrown\r\n# What Actually Happ...", color=0x03bf16, url="http://valkyrieskies.ie")
+        embedVar.set_thumbnail(url="http://ss13.moe/img/vgstation-logo2.png")
+        embedVar.add_field(name="Comments", value="69", inline=False)
+        embedVar.add_field(name="Upvotes", value="2", inline=True)
+        embedVar.add_field(name="Downvotes", value="21", inline=True)
+        embedVar.set_footer(text="ValkyrieSkies")
+        await message.channel.send(embed=embedVar)
 
     #the dumb meme commands get to stay as dollar commands because tradition
     elif message.content.startswith('$manylo'):
