@@ -4,15 +4,12 @@ import wget
 import os
 import random
 
+from discord.ext import commands
 from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
 
-
-intents = discord.Intents.default()
-intents.message_content = True
-
-client = discord.Client(intents=intents)
+bot = discord.Bot(command_prefix="!",intents=discord.Intents.all())
 
 #url for the json file with current round info
 statusurl = "https://ss13.moe/serverinfo/serverinfo.json"
@@ -20,105 +17,103 @@ statusurl = "https://ss13.moe/serverinfo/serverinfo.json"
 dirname = os.path.dirname(__file__)
 localstatusfile = os.path.join(dirname, 'localstatus.json')
 
-@client.event
+@bot.event
 async def on_ready():
-    print(f'We have logged in as {client.user}')
+    print(f'We have logged in as {bot.user}')
+    
+@bot.command(name="status",description="Retrieves the status of the game server.")
+async def slash_command(interaction:discord.Interaction):
+    #wget doesn't overwrite existing files, so you have to delete any pre-existing instances first
+    try:
+        os.remove(localstatusfile)
+    except OSError:
+        pass
+    wget.download(statusurl, 'localstatus.json')
+    statusdict = json.load(open('localstatus.json', 'r'))
+    outputmsg = '**' + statusdict[0]["players"] + '** players online, Current Map is **' + statusdict[0]["map_name"] + '** on **' + statusdict[0]["mode"] + '**, Station Time: **' + statusdict[0]["station_time"] + '**'
+    outputmsg = outputmsg.replace("+", " ")
+    outputmsg = outputmsg.replace("%3a", ":")
+    await interaction.response.send_message(outputmsg)
+    
+@bot.command(name="teststatus",description="Retrieves the status of the test server.")
+async def slash_command(interaction:discord.Interaction):
+    try:
+        os.remove(localstatusfile)
+    except OSError:
+        pass
+    wget.download(statusurl, 'localstatus.json')
+    statusdict = json.load(open('localstatus.json', 'r'))
+    outputmsg = '[Test Server] **' + statusdict[1]["players"] + '** players online, Current Map is **' + statusdict[1]["map_name"] + '** on **' + statusdict[1]["mode"] + '**, Station Time: **' + statusdict[1]["station_time"] + '**'
+    outputmsg = outputmsg.replace("+", " ")
+    outputmsg = outputmsg.replace("%3a", ":")
+    await interaction.response.send_message(outputmsg)
 
-@client.event
+@bot.command(name="who",description="Retrieves the list of active players from the game server.")
+async def slash_command(interaction:discord.Interaction):
+    try:
+        os.remove(localstatusfile)
+    except OSError:
+        pass
+    wget.download(statusurl, 'localstatus.json')
+    statusdict = json.load(open('localstatus.json', 'r'))
+    playercount = int(statusdict[0]["players"])
+    if playercount > 0:
+        playerticker = 0
+        outputmsg = 'Current active players: ';
+        while playerticker < (playercount - 1):
+            playerkey = 'player' + str(playerticker)
+            outputmsg += statusdict[0][playerkey] + ', '
+            playerticker += 1;
+        playerkey = 'player' + str(playerticker)
+        outputmsg += statusdict[0][playerkey]
+        outputmsg = outputmsg.replace("+", " ")
+        await interaction.response.send_message(outputmsg)
+    else:
+        await interaction.response.send_message('No players are currently online.')
+        
+@bot.command(name="testwho",description="Retrieves the list of active players from the test server.")
+async def slash_command(interaction:discord.Interaction):
+    try:
+        os.remove(localstatusfile)
+    except OSError:
+        pass
+    wget.download(statusurl, 'localstatus.json')
+    statusdict = json.load(open('localstatus.json', 'r'))
+    playercount = int(statusdict[1]["players"])
+    if playercount > 0:    
+        playerticker = 0
+        outputmsg = '[Test Server] Current active players: ';
+        while playerticker < (playercount - 1):
+            playerkey = 'player' + str(playerticker)
+            outputmsg += statusdict[1][playerkey] + ', '
+            playerticker += 1;
+        playerkey = 'player' + str(playerticker)
+        outputmsg += statusdict[1][playerkey]
+        outputmsg = outputmsg.replace("+", " ")
+        await interaction.response.send_message(outputmsg)
+    else:
+        await interaction.response.send_message('[Test Server] No players are currently online.')
+
+@bot.event
 async def on_message(message):
-    if message.author == client.user:
+    if message.author == bot.user:
         return
-
-    #returns general information on the current round status
-    if message.content.startswith('!status'):
-        #wget doesn't overwrite existing files, so you have to delete any pre-existing instances first
-        try:
-            os.remove(localstatusfile)
-        except OSError:
-            pass
-        wget.download(statusurl, 'localstatus.json')
-        statusdict = json.load(open('localstatus.json', 'r'))
-        outputmsg = '**' + statusdict[0]["players"] + '** players online, Current Map is **' + statusdict[0]["map_name"] + '** on **' + statusdict[0]["mode"] + '**, Station Time: **' + statusdict[0]["station_time"] + '**'
-        outputmsg = outputmsg.replace("+", " ")
-        outputmsg = outputmsg.replace("%3a", ":")
-        await message.channel.send(outputmsg)
-        
-    #As above but for the test server
-    elif message.content.startswith('!teststatus'):
-        try:
-            os.remove(localstatusfile)
-        except OSError:
-            pass
-        wget.download(statusurl, 'localstatus.json')
-        statusdict = json.load(open('localstatus.json', 'r'))
-        outputmsg = '[Test Server] **' + statusdict[1]["players"] + '** players online, Current Map is **' + statusdict[1]["map_name"] + '** on **' + statusdict[1]["mode"] + '**, Station Time: **' + statusdict[1]["station_time"] + '**'
-        outputmsg = outputmsg.replace("+", " ")
-        outputmsg = outputmsg.replace("%3a", ":")
-        await message.channel.send(outputmsg)
-        
-    #returns a list of the current active players
-    elif message.content.startswith('!who'):
-        try:
-            os.remove(localstatusfile)
-        except OSError:
-            pass
-        wget.download(statusurl, 'localstatus.json')
-        statusdict = json.load(open('localstatus.json', 'r'))
-        playercount = int(statusdict[0]["players"])
-        if playercount > 0:
-        
-            playerticker = 0
-            outputmsg = 'Current active players: ';
-            while playerticker < (playercount - 1):
-                playerkey = 'player' + str(playerticker)
-                outputmsg += statusdict[0][playerkey] + ', '
-                playerticker += 1;
-            playerkey = 'player' + str(playerticker)
-            outputmsg += statusdict[0][playerkey]
-            outputmsg = outputmsg.replace("+", " ")
-            await message.channel.send(outputmsg)
-        else:
-            await message.channel.send('No players are currently online.')
-            
-    #As above but for the test server
-    elif message.content.startswith('!testwho'):
-        try:
-            os.remove(localstatusfile)
-        except OSError:
-            pass
-        wget.download(statusurl, 'localstatus.json')
-        statusdict = json.load(open('localstatus.json', 'r'))
-        playercount = int(statusdict[1]["players"])
-        if playercount > 0:
-        
-            playerticker = 0
-            outputmsg = '[Test Server] Current active players: ';
-            while playerticker < (playercount - 1):
-                playerkey = 'player' + str(playerticker)
-                outputmsg += statusdict[1][playerkey] + ', '
-                playerticker += 1;
-            playerkey = 'player' + str(playerticker)
-            outputmsg += statusdict[1][playerkey]
-            outputmsg = outputmsg.replace("+", " ")
-            await message.channel.send(outputmsg)
-        else:
-            await message.channel.send('[Test Server] No players are currently online.')
-           
-    elif message.content.startswith('!coinflip'):
+    
+    if message.content.startswith('!coinflip'):
         if(random.randint(1, 2) == 1):
             outputmsg = 'Heads'
         else:
             outputmsg = 'Tails'
-        await message.channel.send('🪙 Flipping a Coin: It\'s **' + outputmsg + '**!')  
+        await interaction.response.send_message('🪙 Flipping a Coin: It\'s **' + outputmsg + '**!')  
            
     elif message.content.startswith('!d6'):
-        await message.channel.send('🎲 Rolling a d6: **' + str(random.randint(1, 6)) + '**')        
+        await interaction.response.send_message('🎲 Rolling a d6: **' + str(random.randint(1, 6)) + '**')        
             
     elif message.content.startswith('!d20'):
-        await message.channel.send('🎲 Rolling a d20: **' + str(random.randint(1, 20)) + '**')
+        await interaction.response.send_message('🎲 Rolling a d20: **' + str(random.randint(1, 20)) + '**')
             
     elif message.content.startswith('!help'):
-        await message.channel.send('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: *!status, !who, !teststatus, !testwho, !help, !coinflip, !d6, !d20, $bitch!!!, $bobo, $flarg, $grape, $manylo, $meta, $revealantags, $shotgun, $strangle*.')   
+        await interaction.response.send_message('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: *!status, !who, !teststatus, !testwho, !help, !coinflip, !d6, !d20, $bitch!!!, $bobo, $flarg, $grape, $manylo, $meta, $revealantags, $shotgun, $strangle*.')   
            
     elif message.content.startswith('$manylo'):
         await message.channel.send('Fuckin\' shitman\'s like manylo are the reason this server struggles with pop. The players aren\'t bad, most of you are decent folk, the Admins aren\'t that bad, most are cool but that fucking SHITHEAD motherfucker is what makes people not enjoy the fucking game anymore.')
@@ -230,4 +225,4 @@ async def on_message(message):
                 await message.channel.send('It\'s *Malcolm in the Middle*.')
 
 #create a file named ".env" in the same folder as this and just add a line that's "TOKEN=yourtokenhere"
-client.run(TOKEN)
+bot.run(TOKEN)
