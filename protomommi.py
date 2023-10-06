@@ -169,8 +169,8 @@ async def on_message(message):
                     embeddesc = embeddesc.replace("#", "")
                     embedcolor = 0x03bf16
                     embedtime = postdict["created_at"]
-                    embedtime.replace('T',' ')
-                    embedtime.replace('Z','')
+                    embedtime = embedtime.replace('T',' ')
+                    embedtime = embedtime.replace('Z','')
                     
                     if postdict["state"] != "open":
                         embedcolor = 0xfc0202
