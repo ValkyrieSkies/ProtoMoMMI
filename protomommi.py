@@ -3,6 +3,7 @@ import json
 import wget
 import os
 import random
+import re
 
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -157,15 +158,32 @@ async def on_message(message):
                         pass
                     wget.download(gitposturl, 'localissues.json')
                     postdict = json.load(open('localissues.json', 'r', encoding="utf-8"))
-                    embeddesc = postdict["body"]
-                    if len(postdict["body"]) >= 4096:
-                        embeddesc = embeddesc[:4092] + '...'
-                    embedVar = discord.Embed(title= "[" + prnumber + "] " + postdict["title"], description=embeddesc, color=0x03bf16, url=postdict["url"])
+                    embeddesc = re.sub('\n<!--.*?-->','', postdict["body"], flags=re.DOTALL)
+                    embeddesc = embeddesc.replace("\r", "")
+                    embeddesc = embeddesc.replace("\n", "")
+                    embeddesc = embeddesc.replace("# Revision", "\nRevision: ")
+                    embeddesc = embeddesc.replace("# Description", " - Description: ")
+                    embeddesc = embeddesc.replace("# Steps to Reproduce", " - Steps to Reproduce: ")
+                    embeddesc = embeddesc.replace("# What you Expected", " - What you Expected: ")
+                    embeddesc = embeddesc.replace("# What Actually Happened", " - What Actually Happened: ")
+                    embeddesc = embeddesc.replace("#", "")
+                    embedcolor = 0x03bf16
+                    embedtime = postdict["created_at"]
+                    embedtime.replace('T',' ')
+                    embedtime.replace('Z','')
+                    
+                    if postdict["state"] != "open":
+                        embedcolor = 0xfc0202
+                        
+                    if len(postdict["body"]) >= 512:
+                        embeddesc = embeddesc[:512] + '...'
+                    embedVar = discord.Embed(title= "[" + prnumber + "] " + postdict["title"], description=embeddesc, color=embedcolor, url=postdict["html_url"])
+                    embedVar.set_author(name=postdict["user"]["login"], url=postdict["user"]["html_url"], icon_url=postdict["user"]["avatar_url"])
                     embedVar.set_thumbnail(url="http://ss13.moe/img/vgstation-logo2.png")
-                    embedVar.add_field(name="Comments", value=postdict["comments"], inline=False)
+                    embedVar.add_field(name="Created", value=embedtime, inline=False)
+                    embedVar.add_field(name="Comments", value=postdict["comments"], inline=True)
                     embedVar.add_field(name="Upvotes", value=postdict["reactions"]["+1"], inline=True)
                     embedVar.add_field(name="Downvotes", value=postdict["reactions"]["-1"], inline=True)
-                    embedVar.set_footer(text=postdict["user"]["login"])
                     await message.channel.send(embed=embedVar)
                 else:
                     print("exit point 3")
