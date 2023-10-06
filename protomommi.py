@@ -94,28 +94,33 @@ async def slash_command(interaction:discord.Interaction):
     else:
         await interaction.response.send_message('[Test Server] No players are currently online.')
 
+@bot.command(name="coinflip",description="Flips a coin.")
+async def slash_command(interaction:discord.Interaction):
+    if(random.randint(1, 2) == 1):
+        outputmsg = 'Heads'
+    else:
+        outputmsg = 'Tails'
+    await interaction.response.send_message('🪙 Flipping a Coin: It\'s **' + outputmsg + '**!')
+
+@bot.command(name="d6",description="Rolls a six-sided dice.")
+async def slash_command(interaction:discord.Interaction):
+    await interaction.response.send_message('🎲 Rolling a d6: **' + str(random.randint(1, 6)) + '**')
+
+@bot.command(name="d20",description="Rolls a twenty-sided dice.")
+async def slash_command(interaction:discord.Interaction):
+    await interaction.response.send_message('🎲 Rolling a d20: **' + str(random.randint(1, 20)) + '**')
+    
+@bot.command(name="d20",description="Rolls a twenty-sided dice.")
+async def slash_command(interaction:discord.Interaction):
+    await interaction.response.send_message('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: */status, /who, /teststatus, /testwho, /help, /coinflip, /d6, /d20, $bitch!!!, $bobo, $flarg, $grape, $manylo, $meta, $revealantags, $shotgun, $strangle*.')  
+    
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
         return
-    
-    if message.content.startswith('!coinflip'):
-        if(random.randint(1, 2) == 1):
-            outputmsg = 'Heads'
-        else:
-            outputmsg = 'Tails'
-        await interaction.response.send_message('🪙 Flipping a Coin: It\'s **' + outputmsg + '**!')  
-           
-    elif message.content.startswith('!d6'):
-        await interaction.response.send_message('🎲 Rolling a d6: **' + str(random.randint(1, 6)) + '**')        
-            
-    elif message.content.startswith('!d20'):
-        await interaction.response.send_message('🎲 Rolling a d20: **' + str(random.randint(1, 20)) + '**')
-            
-    elif message.content.startswith('!help'):
-        await interaction.response.send_message('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: *!status, !who, !teststatus, !testwho, !help, !coinflip, !d6, !d20, $bitch!!!, $bobo, $flarg, $grape, $manylo, $meta, $revealantags, $shotgun, $strangle*.')   
-           
-    elif message.content.startswith('$manylo'):
+
+    #the dumb meme commands get to stay as dollar commands because tradition
+    if message.content.startswith('$manylo'):
         await message.channel.send('Fuckin\' shitman\'s like manylo are the reason this server struggles with pop. The players aren\'t bad, most of you are decent folk, the Admins aren\'t that bad, most are cool but that fucking SHITHEAD motherfucker is what makes people not enjoy the fucking game anymore.')
         
     elif message.content.startswith('$grape'):
