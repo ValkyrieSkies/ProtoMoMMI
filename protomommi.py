@@ -4,6 +4,7 @@ import wget
 import os
 import random
 import re
+import pickle
 
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -21,19 +22,21 @@ dirname = os.path.dirname(__file__)
 localstatusfile = os.path.join(dirname, 'localstatus.json')
 localissuesfile = os.path.join(dirname, 'localissues.json')
 localprfile = os.path.join(dirname, 'localpr.json')
-respfile = os.path.join(dirname, 'resp.json')
+respfile = os.path.join(dirname, 'resp.pkl')
 
 respdict = {}
 
 @bot.event
 async def on_ready():
-    print(f'We have logged in as {bot.user}')
+    print(f'- LOG: We have logged in as {bot.user}')
     try:
-        respdict = json.load(open('resp.json', 'r'))
-        print(f'Loaded response file to dictionary successfully.')
+        with open('resp.pkl', 'rb') as incoming:
+            respdict = pickle.load(incoming)
+        print(f'- LOG: Loaded response file to dictionary successfully. \n- DEBUG: Respdict is now: ')
+        print(respdict)
     except:
         respdict = {}
-        print(f'Failed to load response file to dictionary, starting with blank resp dictionary.')
+        print(f'- LOG: Failed to load response file to dictionary, starting with blank response dictionary.')
     
 @bot.command(name="status",description="Retrieves the status of the game server.")
 async def slash_command(interaction:discord.Interaction):
@@ -129,26 +132,28 @@ async def slash_command(interaction:discord.Interaction):
     await interaction.response.send_message('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: */status, /who, /teststatus, /testwho, /help, /coinflip, /d6, /d20, [GitPRNumber], $bitch!!!, $bobo, $flarg, $grape, $manylo, $meta, $revealantags, $shotgun, $strangle*.')  
     
 @bot.command(name="respadd",description="Adds a new response to the bot's records.")
-# this explicitly tells pycord what types the options are instead of it figuring it out by itself
 async def respadd(ctx, responsename: discord.Option(discord.SlashCommandOptionType.string), responsecontent: discord.Option(discord.SlashCommandOptionType.string)):
     if ' ' in responsename or '$' in responsename or '@' in responsename:
         await ctx.respond(f'Spaces, @, and $ are not allowed in response names.')
         return
     else:    
         respdict[responsename] = responsecontent
+        resploader[responsename] = responsecontent
         try:
             os.remove(respfile)
         except OSError:
             pass
-        with open('resp.json', 'w') as fp:
-            json.dump(respdict, fp)
-        await ctx.respond(f"Response $" + responsename + " has been added.")    
+        with open('resp.pkl', 'wb') as outgoing:
+            pickle.dump(resploader, outgoing)
+        await ctx.respond(f"Response $" + responsename + " has been added.")
+        print(f"- LOG: Reponse $" + responsename + " has been added via /respadd by " + str(ctx.author.id)  + " with content: \"" + responsecontent + "\"")
     
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
         return
 
+    #Github PR fetcher
     if message.content.startswith('[') and message.content.endswith(']'):
         prnumber = message.content
         prnumber = prnumber.replace('[', '')
@@ -174,7 +179,7 @@ async def on_message(message):
             gittotal = issuedict[0]["number"]
             
         if len(prnumber) <= len(str(gittotal)):
-            #try:
+            try:
                 if int(prnumber) <= gittotal and int(prnumber) > 0:
                     gitposturl = gitissuesurl + '/' + prnumber
                     try:
@@ -211,25 +216,18 @@ async def on_message(message):
                     embedVar.add_field(name="Downvotes", value=postdict["reactions"]["-1"], inline=True)
                     await message.channel.send(embed=embedVar)
                 else:
-                    print("exit point 3")
                     return
-            #except:
-            #    print("exit point 2")
-            #    return
+            except:
+                return
         else:
-            print("exit point 1")
             return
 
-    #the dumb meme commands get to stay as dollar commands because tradition
     elif message.content.startswith('$'):
         if ' ' in message.content:
             return
         else:
-            keyattempt = message.content[1:]
-            try:
-                await message.channel.send(respdict[keyattempt])
-            except:
-                pass
+            loadpost = respdict[message.content[1:]]
+            await message.channel.send(loadpost)
         
 #create a file named ".env" in the same folder as this and just add a line that's "TOKEN=yourtokenhere"
 bot.run(TOKEN)
