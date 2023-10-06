@@ -11,11 +11,15 @@ TOKEN = os.getenv('TOKEN')
 
 bot = discord.Bot(command_prefix="!",intents=discord.Intents.all())
 
-#url for the json file with current round info
 statusurl = "https://ss13.moe/serverinfo/serverinfo.json"
+giturl = "https://github.com/vgstation-coders/vgstation13/"
+gitissuesurl = "https://api.github.com/repos/vgstation-coders/vgstation13/issues"
+gitprurl = "https://api.github.com/repos/vgstation-coders/vgstation13/pulls"
 
 dirname = os.path.dirname(__file__)
 localstatusfile = os.path.join(dirname, 'localstatus.json')
+localissuesfile = os.path.join(dirname, 'localissues.json')
+localprfile = os.path.join(dirname, 'localpr.json')
 
 @bot.event
 async def on_ready():
@@ -110,7 +114,7 @@ async def slash_command(interaction:discord.Interaction):
 async def slash_command(interaction:discord.Interaction):
     await interaction.response.send_message('🎲 Rolling a d20: **' + str(random.randint(1, 20)) + '**')
     
-@bot.command(name="d20",description="Rolls a twenty-sided dice.")
+@bot.command(name="help",description="Lists available commands.")
 async def slash_command(interaction:discord.Interaction):
     await interaction.response.send_message('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: */status, /who, /teststatus, /testwho, /help, /coinflip, /d6, /d20, $bitch!!!, $bobo, $flarg, $grape, $manylo, $meta, $revealantags, $shotgun, $strangle*.')  
     
@@ -119,8 +123,40 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
+    if message.content.startswith('[') and message.content.endswith(']'):
+        prnumber = message.content
+        prnumber = prnumber.replace('[', '')
+        prnumber = prnumber.replace(']', '')
+        try:
+            os.remove(localissuesfile)
+        except OSError:
+            pass
+        wget.download(gitissuesurl, 'localissues.json')
+        issuedict = json.load(open('localissues.json', 'r', encoding="utf-8"))
+        try:
+            os.remove(localprfile)
+        except OSError:
+            pass
+        wget.download(gitissuesurl, 'localpr.json')
+        prdict = json.load(open('localpr.json', 'r', encoding="utf-8"))
+        if prdict[0]["number"] > issuedict[0]["number"]:
+            gittotal = prdict[0]["number"]
+        else:
+            gittotal = issuedict[0]["number"]
+        if len(prnumber) <= gittotal:
+            try:
+                if int(prnumber) <= gittotal and int(prnumber) > 0:
+                    outputmsg = giturl + 'issues/' + prnumber
+                    await message.channel.send(outputmsg)
+                else:
+                    return
+            except:
+                return
+        else:
+            return
+
     #the dumb meme commands get to stay as dollar commands because tradition
-    if message.content.startswith('$manylo'):
+    elif message.content.startswith('$manylo'):
         await message.channel.send('Fuckin\' shitman\'s like manylo are the reason this server struggles with pop. The players aren\'t bad, most of you are decent folk, the Admins aren\'t that bad, most are cool but that fucking SHITHEAD motherfucker is what makes people not enjoy the fucking game anymore.')
         
     elif message.content.startswith('$grape'):

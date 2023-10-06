@@ -2,3 +2,5 @@
 .env
 *.bak
 localstatus.json
+localissues.json
+localpr.json
