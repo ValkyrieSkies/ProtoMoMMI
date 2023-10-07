@@ -216,6 +216,9 @@ async def slash_command(ctx, responsename: discord.Option(discord.SlashCommandOp
 async def on_message(message):
     if message.author == bot.user:
         return
+        
+    if message.author.bot:
+        return
 
     #Github PR fetcher - currently ignores messages with numbers larger than 5 digits, will have to change if vg reaches over 100,000 PRs/Issues I guess
         # TODO: Make it so that it can pick up [#####] messages within messages rather than just as standalone requests
