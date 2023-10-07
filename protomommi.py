@@ -4,13 +4,11 @@ import wget
 import os
 import random
 import re
-import pickle
 
 from discord.ext import commands
 from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
-
 bot = discord.Bot(command_prefix="!",intents=discord.Intents.all())
 
 statusurl = "https://ss13.moe/serverinfo/serverinfo.json"
@@ -22,22 +20,28 @@ dirname = os.path.dirname(__file__)
 localstatusfile = os.path.join(dirname, 'localstatus.json')
 localissuesfile = os.path.join(dirname, 'localissues.json')
 localprfile = os.path.join(dirname, 'localpr.json')
-respfile = os.path.join(dirname, 'resp.pkl')
-
-respdict = {}
+respfile = os.path.join(dirname, 'resp.json')
 
 @bot.event
 async def on_ready():
     print(f'- LOG: We have logged in as {bot.user}')
     try:
-        with open('resp.pkl', 'rb') as incoming:
-            respdict = pickle.load(incoming)
-        print(f'- LOG: Loaded response file to dictionary successfully. \n- DEBUG: Respdict is now: ')
+        global respdict
+        with open('resp.json', 'r') as incoming:
+            respdict = json.load(incoming)
+        print(f'- LOG: Loaded response file to dictionary successfully. respdict contains the following: ')
         print(respdict)
     except:
-        respdict = {}
         print(f'- LOG: Failed to load response file to dictionary, starting with blank response dictionary.')
-    
+
+# -------------- #
+# Slash commands #
+# -------------- #
+
+@bot.command(name="help",description="Lists available commands.")
+async def slash_command(interaction:discord.Interaction):
+    await interaction.response.send_message('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: */help, /status, /who, /teststatus, /testwho, /resplist, /respadd, /respdel, /coinflip, /d6, /d20, [GitPRNumber], $ResponseName.')
+
 @bot.command(name="status",description="Retrieves the status of the game server.")
 async def slash_command(interaction:discord.Interaction):
     #wget doesn't overwrite existing files, so you have to delete any pre-existing instances first
@@ -111,6 +115,8 @@ async def slash_command(interaction:discord.Interaction):
     else:
         await interaction.response.send_message('[Test Server] No players are currently online.')
 
+# Gimmick commands here
+
 @bot.command(name="coinflip",description="Flips a coin.")
 async def slash_command(interaction:discord.Interaction):
     if(random.randint(1, 2) == 1):
@@ -127,34 +133,63 @@ async def slash_command(interaction:discord.Interaction):
 async def slash_command(interaction:discord.Interaction):
     await interaction.response.send_message('🎲 Rolling a d20: **' + str(random.randint(1, 20)) + '**')
     
-@bot.command(name="help",description="Lists available commands.")
+# Resp related commands here
+
+@bot.command(name="resplist",description="Lists available responses.")
 async def slash_command(interaction:discord.Interaction):
-    await interaction.response.send_message('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: */status, /who, /teststatus, /testwho, /help, /coinflip, /d6, /d20, [GitPRNumber], $bitch!!!, $bobo, $flarg, $grape, $manylo, $meta, $revealantags, $shotgun, $strangle*.')  
+    thelist = ""
+    for x in respdict:
+        thelist = thelist + "$" + x + ", "
+    thelist = thelist[:(len(thelist)-2)]
+    await interaction.response.send_message("Available responses: " + thelist)
     
 @bot.command(name="respadd",description="Adds a new response to the bot's records.")
-async def respadd(ctx, responsename: discord.Option(discord.SlashCommandOptionType.string), responsecontent: discord.Option(discord.SlashCommandOptionType.string)):
-    if ' ' in responsename or '$' in responsename or '@' in responsename:
-        await ctx.respond(f'Spaces, @, and $ are not allowed in response names.')
+async def slash_command(ctx, responsename: discord.Option(discord.SlashCommandOptionType.string), responsecontent: discord.Option(discord.SlashCommandOptionType.string)):
+    if ' ' in responsename or '$' in responsename or '@' in responsename or '<' in responsename or '>' in responsename:
+        await ctx.respond(f'Spaces, @, <, >, and $ are not allowed in response names.')
         return
     else:    
         respdict[responsename] = responsecontent
-        resploader[responsename] = responsecontent
         try:
             os.remove(respfile)
         except OSError:
             pass
-        with open('resp.pkl', 'wb') as outgoing:
-            pickle.dump(resploader, outgoing)
+        with open('resp.json', 'w') as outgoing:
+            json.dump(respdict, outgoing)
         await ctx.respond(f"Response $" + responsename + " has been added.")
         print(f"- LOG: Reponse $" + responsename + " has been added via /respadd by " + str(ctx.author.id)  + " with content: \"" + responsecontent + "\"")
-    
+        
+@bot.command(name="respdel",description="Remove a response from the bot's records.")
+async def slash_command(ctx, responsename: discord.Option(discord.SlashCommandOptionType.string)):
+    if ' ' in responsename or '$' in responsename or '@' in responsename or '<' in responsename or '>' in responsename:
+        await ctx.respond(f'Spaces, @, <, >, and $ are not allowed in response names.')
+        return
+    else:
+        try:
+            del respdict[responsename]
+        except:
+            await ctx.respond(f"Response $" + responsename + " doesn't seem to exist.")
+            return
+        try:
+            os.remove(respfile)
+        except OSError:
+            pass
+        with open('resp.json', 'w') as outgoing:
+            json.dump(respdict, outgoing)
+        await ctx.respond(f"Response $" + responsename + " has been removed.")
+        print(f"- LOG: Reponse $" + responsename + " has been deleted via /respdel by " + str(ctx.author.id) + "\"")
+        
+# ----------------------------------- #
+# Non-Slash Commands below this point #
+# ----------------------------------- #
+   
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
         return
 
     #Github PR fetcher
-    if message.content.startswith('[') and message.content.endswith(']'):
+    if message.content.startswith('[') and message.content.endswith(']') and len(message.content) <= 7:
         prnumber = message.content
         prnumber = prnumber.replace('[', '')
         prnumber = prnumber.replace(']', '')
@@ -222,12 +257,15 @@ async def on_message(message):
         else:
             return
 
+    #Response poster
     elif message.content.startswith('$'):
         if ' ' in message.content:
             return
         else:
-            loadpost = respdict[message.content[1:]]
-            await message.channel.send(loadpost)
+            try:
+                await message.channel.send(respdict[message.content[1:]])
+            except:
+                return
         
 #create a file named ".env" in the same folder as this and just add a line that's "TOKEN=yourtokenhere"
 bot.run(TOKEN)
