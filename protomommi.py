@@ -4,6 +4,7 @@ import wget
 import os
 import random
 import re
+import datetime
 
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -22,18 +23,20 @@ localissuesfile = os.path.join(dirname, 'localissues.json')
 localprfile = os.path.join(dirname, 'localpr.json')
 respfile = os.path.join(dirname, 'resp.json')
 
+def logTime():
+    return datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+
 @bot.event
 async def on_ready():
-    print(f'- LOG: We have logged in as {bot.user}')
+    print(logTime() + " - LOG: We have logged in as {bot.user}")
     try:
         global respdict
         with open('resp.json', 'r') as incoming:
             respdict = json.load(incoming)
-        print(f'- LOG: Loaded response file to dictionary successfully. respdict contains the following: ')
-        print(respdict)
+        print(logTime() + " - LOG: Loaded response file to dictionary successfully.")
     except:
         respdict = {}
-        print(f'- LOG: Failed to load response file to dictionary, starting with blank response dictionary.')
+        print(logTime() + " - LOG: Failed to load response file to dictionary, starting with blank response dictionary.")
 
 # -------------- #
 # Slash commands #
@@ -160,9 +163,9 @@ async def slash_command(ctx, responsename: discord.Option(discord.SlashCommandOp
             with open('resp.json', 'w') as outgoing:
                 json.dump(respdict, outgoing)
             await ctx.respond(f"Response $" + responsename + " has been added.")
-            print(f"- LOG: Reponse $" + responsename + " has been added via /respadd by " + str(ctx.author.id)  + " with content: \"" + responsecontent + "\"")
+            print(logTime() + " - LOG: Reponse $" + responsename + " has been added via /respadd by " + str(ctx.author.id)  + " with content: \"" + responsecontent + "\"")
     except:
-        await ctx.respond(f"Administrator privileges are required to modify responses.")
+        await ctx.respond(f"Administrator privileges are required to modify responses.", ephemeral=True)
         
 @bot.command(name="respdel",description="Remove a response from the bot's records.")
 @commands.has_permissions(administrator = True)
@@ -184,9 +187,9 @@ async def slash_command(ctx, responsename: discord.Option(discord.SlashCommandOp
             with open('resp.json', 'w') as outgoing:
                 json.dump(respdict, outgoing)
             await ctx.respond(f"Response $" + responsename + " has been removed.")
-            print(f"- LOG: Reponse $" + responsename + " has been deleted via /respdel by " + str(ctx.author.id) + "\"")
+            print(logTime() + ' - LOG: Reponse $" + responsename + " has been deleted via /respdel by " + str(ctx.author.id) + "\"")
     except:
-        await ctx.respond(f"Administrator privileges are required to modify responses.")
+        await ctx.respond(f"Administrator privileges are required to modify responses.", ephemeral=True)
         
 # ----------------------------------- #
 # Non-Slash Commands below this point #
@@ -266,6 +269,7 @@ async def on_message(message):
                 embedVar.add_field(name="Downvotes", value=postdict["reactions"]["-1"], inline=True)
                 await message.channel.send(embed=embedVar)
             except:
+                await message.channel.send("Unable to fetch PR. It's possible the rate limit has been exceeded.")
                 return
         else:
             return
