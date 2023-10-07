@@ -131,13 +131,28 @@ async def slash_command(interaction:discord.Interaction):
         outputmsg = 'Tails'
     await interaction.response.send_message('🪙 Flipping a Coin: It\'s **' + outputmsg + '**!')
 
-@bot.command(name="d6",description="Rolls a six-sided dice.")
-async def slash_command(interaction:discord.Interaction):
-    await interaction.response.send_message('🎲 Rolling a d6: **' + str(random.randint(1, 6)) + '**')
+@bot.command(name="roll",description="Roll a number of specified dice.")
+async def slash_command(ctx, diceamount: discord.Option(discord.SlashCommandOptionType.integer), dicesides: discord.Option(discord.SlashCommandOptionType.integer)):
+    if diceamount > 100:
+        await ctx.respond("Fuck off you don't need that many dice.", ephemeral=True)
 
-@bot.command(name="d20",description="Rolls a twenty-sided dice.")
-async def slash_command(interaction:discord.Interaction):
-    await interaction.response.send_message('🎲 Rolling a d20: **' + str(random.randint(1, 20)) + '**')
+    elif dicesides > 1000:
+        await ctx.respond("No, nothing larger than a d1000.", ephemeral=True)
+      
+    elif diceamount <= 0:
+        await ctx.respond("You can't roll less than one dice bro.", ephemeral=True)
+        
+    elif dicesides <= 0:
+        await ctx.respond("No, you can't have a dice with no sides.", ephemeral=True)
+    
+    else:  
+        i = 0
+        outputmsg = ""
+        while i < diceamount - 1:
+            outputmsg = outputmsg + str(random.randint(1, dicesides)) + ", "
+            i = i + 1
+        outputmsg = outputmsg + str(random.randint(1, dicesides))
+        await ctx.respond("🎲 Rolling " + str(diceamount) + "d" + str(dicesides) + ", results: " + outputmsg)
     
 # Resp related commands here
 
