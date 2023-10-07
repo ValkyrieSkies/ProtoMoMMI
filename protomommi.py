@@ -23,6 +23,8 @@ localissuesfile = os.path.join(dirname, 'localissues.json')
 localprfile = os.path.join(dirname, 'localpr.json')
 respfile = os.path.join(dirname, 'resp.json')
 
+badCharacters = [' ', '/', '$', '>', '<', '@', '*', '%', ',', '"', "'", '\\', '|', '[', ']', '{', '}', '(', ')', '^']
+
 def logTime():
     return datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
 
@@ -151,8 +153,8 @@ async def slash_command(interaction:discord.Interaction):
 @commands.has_permissions(administrator = True)
 async def slash_command(ctx, responsename: discord.Option(discord.SlashCommandOptionType.string), responsecontent: discord.Option(discord.SlashCommandOptionType.string)):
     try:
-        if ' ' in responsename or '$' in responsename or '@' in responsename or '<' in responsename or '>' in responsename:
-            await ctx.respond(f'Spaces, @, <, >, and $ are not allowed in response names.')
+        if any([x in responsename for x in badCharacters]):
+            await ctx.respond(f'Do not use non-text characters other than !, ?, -, and . in response names.', ephemeral=True)
             return
         else:    
             respdict[responsename] = responsecontent
@@ -171,8 +173,8 @@ async def slash_command(ctx, responsename: discord.Option(discord.SlashCommandOp
 @commands.has_permissions(administrator = True)
 async def slash_command(ctx, responsename: discord.Option(discord.SlashCommandOptionType.string)):
     try:
-        if ' ' in responsename or '$' in responsename or '@' in responsename or '<' in responsename or '>' in responsename:
-            await ctx.respond(f'Spaces, @, <, >, and $ are not allowed in response names.')
+        if any([x in responsename for x in badCharacters]):
+            await ctx.respond(f'Special characters are disallowed here to prevent potentially dangerous code executions. If there\'s somehow an unwanted response with forbidden characters as its key, manually remove it from resp.json.', ephemeral=True)
             return
         else:
             try:
@@ -201,6 +203,7 @@ async def on_message(message):
         return
 
     #Github PR fetcher - currently ignores messages with numbers larger than 5 digits, will have to change if vg reaches over 100,000 PRs/Issues I guess
+        # TODO: Make it so that it can pick up [#####] messages within messages rather than just as standalone requests
     if message.content.startswith('[') and message.content.endswith(']') and len(message.content) <= 7:
         prnumber = message.content
         prnumber = prnumber.replace('[', '')
@@ -251,7 +254,8 @@ async def on_message(message):
                 embedtime = embedtime.replace('T',' ')
                 embedtime = embedtime.replace('Z','')
                 
-                #Changes the colour to red if it's closed
+                #Changes the colour to red rather than green if it's closed
+                    #TODO: Implement a better check system so merges can be coloured purple instead
                 if postdict["state"] != "open":
                     embedcolor = 0xfc0202
                         
@@ -276,7 +280,7 @@ async def on_message(message):
 
     #Response poster
     elif message.content.startswith('$'):
-        if ' ' in message.content:
+        if any([x in message.content[1:] for x in badCharacters]):
             return
         else:
             try:
