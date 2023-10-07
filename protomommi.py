@@ -28,7 +28,7 @@ def logTime():
 
 @bot.event
 async def on_ready():
-    print(logTime() + " - LOG: We have logged in as {bot.user}")
+    print(logTime() + " - LOG: We have logged in as " + str(bot.user))
     try:
         global respdict
         with open('resp.json', 'r') as incoming:
