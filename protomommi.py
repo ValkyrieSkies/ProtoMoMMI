@@ -187,7 +187,7 @@ async def slash_command(ctx, responsename: discord.Option(discord.SlashCommandOp
             with open('resp.json', 'w') as outgoing:
                 json.dump(respdict, outgoing)
             await ctx.respond(f"Response $" + responsename + " has been removed.")
-            print(logTime() + ' - LOG: Reponse $" + responsename + " has been deleted via /respdel by " + str(ctx.author.id) + "\"")
+            print(logTime() + " - LOG: Reponse $" + responsename + " has been deleted via /respdel by " + str(ctx.author.id) + "\"")
     except:
         await ctx.respond(f"Administrator privileges are required to modify responses.", ephemeral=True)
         
