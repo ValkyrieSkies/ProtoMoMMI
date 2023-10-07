@@ -147,12 +147,18 @@ async def slash_command(ctx, diceamount: discord.Option(discord.SlashCommandOpti
     
     else:  
         i = 0
-        outputmsg = ""
+        currentval = 0
+        runtotal = 0
+        outputmsg = "**"
         while i < diceamount - 1:
-            outputmsg = outputmsg + str(random.randint(1, dicesides)) + ", "
+            currentval = random.randint(1, dicesides)
+            runtotal = runtotal + currentval
+            outputmsg = outputmsg + str(currentval) + ", "
             i = i + 1
-        outputmsg = outputmsg + str(random.randint(1, dicesides))
-        await ctx.respond("🎲 Rolling " + str(diceamount) + "d" + str(dicesides) + ", results: " + outputmsg)
+        currentval = random.randint(1, dicesides)
+        runtotal = runtotal + currentval
+        outputmsg = outputmsg + str(currentval) + "**"
+        await ctx.respond("🎲 Rolling " + str(diceamount) + "d" + str(dicesides) + ", results: " + outputmsg + ", sum total = **" + str(runtotal) + "**")
     
 # Resp related commands here
 
