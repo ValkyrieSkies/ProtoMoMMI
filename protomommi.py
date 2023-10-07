@@ -32,6 +32,7 @@ async def on_ready():
         print(f'- LOG: Loaded response file to dictionary successfully. respdict contains the following: ')
         print(respdict)
     except:
+        respdict = {}
         print(f'- LOG: Failed to load response file to dictionary, starting with blank response dictionary.')
 
 # -------------- #
@@ -144,114 +145,126 @@ async def slash_command(interaction:discord.Interaction):
     await interaction.response.send_message("Available responses: " + thelist)
     
 @bot.command(name="respadd",description="Adds a new response to the bot's records.")
+@commands.has_permissions(administrator = True)
 async def slash_command(ctx, responsename: discord.Option(discord.SlashCommandOptionType.string), responsecontent: discord.Option(discord.SlashCommandOptionType.string)):
-    if ' ' in responsename or '$' in responsename or '@' in responsename or '<' in responsename or '>' in responsename:
-        await ctx.respond(f'Spaces, @, <, >, and $ are not allowed in response names.')
-        return
-    else:    
-        respdict[responsename] = responsecontent
-        try:
-            os.remove(respfile)
-        except OSError:
-            pass
-        with open('resp.json', 'w') as outgoing:
-            json.dump(respdict, outgoing)
-        await ctx.respond(f"Response $" + responsename + " has been added.")
-        print(f"- LOG: Reponse $" + responsename + " has been added via /respadd by " + str(ctx.author.id)  + " with content: \"" + responsecontent + "\"")
+    try:
+        if ' ' in responsename or '$' in responsename or '@' in responsename or '<' in responsename or '>' in responsename:
+            await ctx.respond(f'Spaces, @, <, >, and $ are not allowed in response names.')
+            return
+        else:    
+            respdict[responsename] = responsecontent
+            try:
+                os.remove(respfile)
+            except OSError:
+                pass
+            with open('resp.json', 'w') as outgoing:
+                json.dump(respdict, outgoing)
+            await ctx.respond(f"Response $" + responsename + " has been added.")
+            print(f"- LOG: Reponse $" + responsename + " has been added via /respadd by " + str(ctx.author.id)  + " with content: \"" + responsecontent + "\"")
+    except:
+        await ctx.respond(f"Administrator privileges are required to modify responses.")
         
 @bot.command(name="respdel",description="Remove a response from the bot's records.")
+@commands.has_permissions(administrator = True)
 async def slash_command(ctx, responsename: discord.Option(discord.SlashCommandOptionType.string)):
-    if ' ' in responsename or '$' in responsename or '@' in responsename or '<' in responsename or '>' in responsename:
-        await ctx.respond(f'Spaces, @, <, >, and $ are not allowed in response names.')
-        return
-    else:
-        try:
-            del respdict[responsename]
-        except:
-            await ctx.respond(f"Response $" + responsename + " doesn't seem to exist.")
+    try:
+        if ' ' in responsename or '$' in responsename or '@' in responsename or '<' in responsename or '>' in responsename:
+            await ctx.respond(f'Spaces, @, <, >, and $ are not allowed in response names.')
             return
-        try:
-            os.remove(respfile)
-        except OSError:
-            pass
-        with open('resp.json', 'w') as outgoing:
-            json.dump(respdict, outgoing)
-        await ctx.respond(f"Response $" + responsename + " has been removed.")
-        print(f"- LOG: Reponse $" + responsename + " has been deleted via /respdel by " + str(ctx.author.id) + "\"")
+        else:
+            try:
+                del respdict[responsename]
+            except:
+                await ctx.respond(f"Response $" + responsename + " doesn't seem to exist.")
+                return
+            try:
+                os.remove(respfile)
+            except OSError:
+                pass
+            with open('resp.json', 'w') as outgoing:
+                json.dump(respdict, outgoing)
+            await ctx.respond(f"Response $" + responsename + " has been removed.")
+            print(f"- LOG: Reponse $" + responsename + " has been deleted via /respdel by " + str(ctx.author.id) + "\"")
+    except:
+        await ctx.respond(f"Administrator privileges are required to modify responses.")
         
 # ----------------------------------- #
 # Non-Slash Commands below this point #
 # ----------------------------------- #
-   
+
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
         return
 
-    #Github PR fetcher
+    #Github PR fetcher - currently ignores messages with numbers larger than 5 digits, will have to change if vg reaches over 100,000 PRs/Issues I guess
     if message.content.startswith('[') and message.content.endswith(']') and len(message.content) <= 7:
         prnumber = message.content
         prnumber = prnumber.replace('[', '')
         prnumber = prnumber.replace(']', '')
         
+        # The tldr of what's happening here is that the bot pulls the json files of the latest issues and PRs and checks what the highest numbered one is so the bot can ignore requests for PRs/Issues that don't exist
         try:
             os.remove(localissuesfile)
         except OSError:
             pass
         wget.download(gitissuesurl, 'localissues.json')
         issuedict = json.load(open('localissues.json', 'r', encoding="utf-8"))
-        
         try:
             os.remove(localprfile)
         except OSError:
             pass
         wget.download(gitprurl, 'localpr.json')
         prdict = json.load(open('localpr.json', 'r', encoding="utf-8"))
-        
         if int(prdict[0]["number"]) >= int(issuedict[0]["number"]):
             gittotal = prdict[0]["number"]
         else:
             gittotal = issuedict[0]["number"]
-            
-        if len(prnumber) <= len(str(gittotal)):
+        
+        #Makes sure the requested PR/Issue is actually in the scop of what's on the repo and skips if it's not
+        if int(prnumber) <= gittotal and int(prnumber) > 0:
             try:
-                if int(prnumber) <= gittotal and int(prnumber) > 0:
-                    gitposturl = gitissuesurl + '/' + prnumber
-                    try:
-                        os.remove(localissuesfile)
-                    except OSError:
-                        pass
-                    wget.download(gitposturl, 'localissues.json')
-                    postdict = json.load(open('localissues.json', 'r', encoding="utf-8"))
-                    embeddesc = re.sub('\n<!--.*?-->','', postdict["body"], flags=re.DOTALL)
-                    embeddesc = embeddesc.replace("\r", "")
-                    embeddesc = embeddesc.replace("\n", "")
-                    embeddesc = embeddesc.replace("# Revision", "\nRevision: ")
-                    embeddesc = embeddesc.replace("# Description", " - Description: ")
-                    embeddesc = embeddesc.replace("# Steps to Reproduce", " - Steps to Reproduce: ")
-                    embeddesc = embeddesc.replace("# What you Expected", " - What you Expected: ")
-                    embeddesc = embeddesc.replace("# What Actually Happened", " - What Actually Happened: ")
-                    embeddesc = embeddesc.replace("#", "")
-                    embedcolor = 0x03bf16
-                    embedtime = postdict["created_at"]
-                    embedtime = embedtime.replace('T',' ')
-                    embedtime = embedtime.replace('Z','')
-                    
-                    if postdict["state"] != "open":
-                        embedcolor = 0xfc0202
+                #This is where we actually download the requested post once it's established it's viable
+                gitposturl = gitissuesurl + '/' + prnumber
+                try:
+                    os.remove(localissuesfile)
+                except OSError:
+                    pass
+                wget.download(gitposturl, 'localissues.json')
+                postdict = json.load(open('localissues.json', 'r', encoding="utf-8"))
+                
+                #Strips styling effects and reformats some common blocks to look nicer on an embed
+                embeddesc = re.sub('\n<!--.*?-->','', postdict["body"], flags=re.DOTALL)
+                embeddesc = embeddesc.replace("\r", "")
+                embeddesc = embeddesc.replace("\n", "")
+                embeddesc = embeddesc.replace("# Revision", "\nRevision: ")
+                embeddesc = embeddesc.replace("# Description", " - Description: ")
+                embeddesc = embeddesc.replace("# Steps to Reproduce", " - Steps to Reproduce: ")
+                embeddesc = embeddesc.replace("# What you Expected", " - What you Expected: ")
+                embeddesc = embeddesc.replace("# What Actually Happened", " - What Actually Happened: ")
+                embeddesc = embeddesc.replace("#", "")
+                embedcolor = 0x03bf16
+                embedtime = postdict["created_at"]
+                embedtime = embedtime.replace('T',' ')
+                embedtime = embedtime.replace('Z','')
+                
+                #Changes the colour to red if it's closed
+                if postdict["state"] != "open":
+                    embedcolor = 0xfc0202
                         
-                    if len(postdict["body"]) >= 512:
-                        embeddesc = embeddesc[:512] + '...'
-                    embedVar = discord.Embed(title= "[" + prnumber + "] " + postdict["title"], description=embeddesc, color=embedcolor, url=postdict["html_url"])
-                    embedVar.set_author(name=postdict["user"]["login"], url=postdict["user"]["html_url"], icon_url=postdict["user"]["avatar_url"])
-                    embedVar.set_thumbnail(url="http://ss13.moe/img/vgstation-logo2.png")
-                    embedVar.add_field(name="Created", value=embedtime, inline=False)
-                    embedVar.add_field(name="Comments", value=postdict["comments"], inline=True)
-                    embedVar.add_field(name="Upvotes", value=postdict["reactions"]["+1"], inline=True)
-                    embedVar.add_field(name="Downvotes", value=postdict["reactions"]["-1"], inline=True)
-                    await message.channel.send(embed=embedVar)
-                else:
-                    return
+                #If the request is verbose, shrinks it down to 512 characters and adds an ellipses
+                if len(postdict["body"]) >= 512:
+                    embeddesc = embeddesc[:512] + '...'
+                    
+                #Here's where the embed is actually constructed
+                embedVar = discord.Embed(title= "[" + prnumber + "] " + postdict["title"], description=embeddesc, color=embedcolor, url=postdict["html_url"])
+                embedVar.set_author(name=postdict["user"]["login"], url=postdict["user"]["html_url"], icon_url=postdict["user"]["avatar_url"])
+                embedVar.set_thumbnail(url="http://ss13.moe/img/vgstation-logo2.png")
+                embedVar.add_field(name="Created", value=embedtime, inline=False)
+                embedVar.add_field(name="Comments", value=postdict["comments"], inline=True)
+                embedVar.add_field(name="Upvotes", value=postdict["reactions"]["+1"], inline=True)
+                embedVar.add_field(name="Downvotes", value=postdict["reactions"]["-1"], inline=True)
+                await message.channel.send(embed=embedVar)
             except:
                 return
         else:
