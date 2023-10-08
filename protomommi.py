@@ -6,11 +6,14 @@ import random
 import re
 import datetime
 
+from quart import *
 from discord.ext import commands
 from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
+DISCPASS = os.getenv('DISCPASS')
 bot = discord.Bot(command_prefix="!",intents=discord.Intents.all())
+app = Quart(__name__)
 
 statusurl = "https://ss13.moe/serverinfo/serverinfo.json"
 giturl = "https://github.com/vgstation-coders/vgstation13/"
@@ -26,7 +29,7 @@ respfile = os.path.join(dirname, 'resp.json')
 badCharacters = [' ', '/', '$', '>', '<', '@', '*', '%', ',', '"', "'", '\\', '|', '[', ']', '{', '}', '(', ')', '^']
 
 def logTime():
-    return datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+    return "[" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "]"
 
 @bot.event
 async def on_ready():
@@ -40,6 +43,33 @@ async def on_ready():
         respdict = {}
         print(logTime() + " - LOG: Failed to load response file to dictionary, starting with blank response dictionary.")
 
+# ---------------- #
+# Byond listener #
+# ---------------- #
+
+@app.route("/get")
+async def roundEnd():
+    urlpayload = str(request.url)
+    print("- DEBUG: Received GET request with value: " + urlpayload)
+    urlpayload = urlpayload[(urlpayload.find('?')+1):]
+    print("- DEBUG: urlpayload is " + urlpayload)
+    if urlpayload[:urlpayload.find('&')] == ('pass=' + DISCPASS):
+        print("- DEBUG: DISCPASS accepted.")
+        urlpayload = urlpayload[urlpayload.find('&')+1:]
+        print("- DEBUG: urlpayload is now: " + urlpayload)
+        print("- DEBUG: statusread is: " + urlpayload[urlpayload.find('=')+1:urlpayload.find('&')])
+        if urlpayload[urlpayload.find('=')+1:urlpayload.find('&')] == "server_status":
+            print("- DEBUG: Conditions SHOULD be met")
+            message = discord.Message()
+            message.channel = 1159522133408501811
+            await message.channel.send("Server Status GET received!")
+            return " "
+        else:
+            return " "
+    else:    
+        return " "
+    
+
 # -------------- #
 # Slash commands #
 # -------------- #
@@ -47,6 +77,12 @@ async def on_ready():
 @bot.command(name="help",description="Lists available commands.")
 async def slash_command(interaction:discord.Interaction):
     await interaction.response.send_message('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: */help, /status, /who, /teststatus, /testwho, /resplist, /respadd, /respdel, /coinflip, /d6, /d20, [GitPRNumber], $ResponseName.')
+    
+@bot.command(name="emergencykill",description="Ends the program abruptly.")
+@commands.has_permissions(administrator = True)
+async def slash_command(interaction:discord.Interaction):
+    await interaction.response.send_message("Process terminated.")
+    await exit()
 
 @bot.command(name="status",description="Retrieves the status of the game server.")
 async def slash_command(interaction:discord.Interaction):
@@ -187,7 +223,7 @@ async def slash_command(ctx, responsename: discord.Option(discord.SlashCommandOp
                 json.dump(respdict, outgoing)
             await ctx.respond(f"Response $" + responsename + " has been added.")
             print(logTime() + " - LOG: Reponse $" + responsename + " has been added via /respadd by " + str(ctx.author.id)  + " with content: \"" + responsecontent + "\"")
-    except:
+    except MissingPermissions:
         await ctx.respond(f"Administrator privileges are required to modify responses.", ephemeral=True)
         
 @bot.command(name="respdel",description="Remove a response from the bot's records.")
@@ -211,7 +247,7 @@ async def slash_command(ctx, responsename: discord.Option(discord.SlashCommandOp
                 json.dump(respdict, outgoing)
             await ctx.respond(f"Response $" + responsename + " has been removed.")
             print(logTime() + " - LOG: Reponse $" + responsename + " has been deleted via /respdel by " + str(ctx.author.id) + "\"")
-    except:
+    except MissingPermissions:
         await ctx.respond(f"Administrator privileges are required to modify responses.", ephemeral=True)
         
 # ----------------------------------- #
@@ -311,6 +347,8 @@ async def on_message(message):
                 await message.channel.send(respdict[message.content[1:]])
             except:
                 return
-        
+     
+bot.loop.create_task(app.run_task('127.0.0.1', '5000'))
+     
 #create a file named ".env" in the same folder as this and just add a line that's "TOKEN=yourtokenhere"
 bot.run(TOKEN)
