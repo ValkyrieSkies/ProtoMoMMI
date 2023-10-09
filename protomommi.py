@@ -47,6 +47,7 @@ respfile = os.path.join(dirname, 'resp.json')
 #Characters disallowed in resp names
 badCharacters = [' ', '/', '$', '>', '<', '@', '*', '%', ',', '"', "'", '\\', '|', '[', ']', '{', '}', '(', ')', '^']
 
+#bot is the discord bot, app is the quart server
 bot = discord.Bot(command_prefix="!",intents=discord.Intents.all())
 app = Quart(__name__)
 
