@@ -10,8 +10,17 @@ from quart import *
 from discord.ext import commands
 from dotenv import load_dotenv
 load_dotenv()
+
+
+#.env
 TOKEN = os.getenv('TOKEN')
+
+#.env - server config assigned discord password
 DISCPASS = os.getenv('DISCPASS')
+
+#.env - discord Channel IDs
+DISCSTATUSCHAN = os.getenv('DISCSTATUSCHAN')
+
 bot = discord.Bot(command_prefix="!",intents=discord.Intents.all())
 app = Quart(__name__)
 
@@ -20,12 +29,14 @@ giturl = "https://github.com/vgstation-coders/vgstation13/"
 gitissuesurl = "https://api.github.com/repos/vgstation-coders/vgstation13/issues"
 gitprurl = "https://api.github.com/repos/vgstation-coders/vgstation13/pulls"
 
+#Local file locations
 dirname = os.path.dirname(__file__)
 localstatusfile = os.path.join(dirname, 'localstatus.json')
 localissuesfile = os.path.join(dirname, 'localissues.json')
 localprfile = os.path.join(dirname, 'localpr.json')
 respfile = os.path.join(dirname, 'resp.json')
 
+#Characters disallowed in resp names
 badCharacters = [' ', '/', '$', '>', '<', '@', '*', '%', ',', '"', "'", '\\', '|', '[', ']', '{', '}', '(', ')', '^']
 
 def logTime():
@@ -44,7 +55,7 @@ async def on_ready():
         print(logTime() + " - LOG: Failed to load response file to dictionary, starting with blank response dictionary.")
 
 # ---------------- #
-# Byond listener #
+# Byond listener   #
 # ---------------- #
 
 @app.route("/get")
@@ -52,18 +63,22 @@ async def roundEnd():
     urlpayload = str(request.url)
     print("- DEBUG: Received GET request with value: " + urlpayload)
     urlpayload = urlpayload[(urlpayload.find('?')+1):]
-    print("- DEBUG: urlpayload is " + urlpayload)
     if urlpayload[:urlpayload.find('&')] == ('pass=' + DISCPASS):
         print("- DEBUG: DISCPASS accepted.")
         urlpayload = urlpayload[urlpayload.find('&')+1:]
         print("- DEBUG: urlpayload is now: " + urlpayload)
-        print("- DEBUG: statusread is: " + urlpayload[urlpayload.find('=')+1:urlpayload.find('&')])
-        if urlpayload[urlpayload.find('=')+1:urlpayload.find('&')] == "server_status":
-            print("- DEBUG: Conditions SHOULD be met")
-            message = discord.Message()
-            message.channel = 1159522133408501811
-            await message.channel.send("Server Status GET received!")
-            return " "
+        if urlpayload[:urlpayload.find('&')] == ('meta=' + 'server_status'):
+            channel = bot.get_channel(int(DISCSTATUSCHAN))
+            await channel.send("Status GET received!")
+            urlpayload = urlpayload[1:]
+            urlpayload = urlpayload[(urlpayload.find('&')+1):]
+            print("- DEBUG: urlpayload 0 to 17 reads: " + urlpayload[:17])
+            if urlpayload[:17] == ('content=' + '**The+gam'):
+                await channel.send("Round startconfirmed!")
+                return " "
+                
+            else:
+                return " "
         else:
             return " "
     else:    
