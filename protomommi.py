@@ -5,21 +5,31 @@ import os
 import random
 import re
 import datetime
+import urllib
 
+from urllib.parse import unquote
 from quart import *
 from discord.ext import commands
 from dotenv import load_dotenv
 load_dotenv()
 
 
-#.env
+#.env data
 TOKEN = os.getenv('TOKEN')
 
 #.env - server config assigned discord password
 DISCPASS = os.getenv('DISCPASS')
 
 #.env - discord Channel IDs
+DISCAHELPCHAN = os.getenv('DISCAHELPCHAN')
+DISCAHELPCHANID = int(os.getenv('DISCAHELPCHANID'))
+DISCMAINCHAN = os.getenv('DISCMAINCHAN')
+DISCMAINCHANID = int(os.getenv('DISCMAINCHANID'))
 DISCSTATUSCHAN = os.getenv('DISCSTATUSCHAN')
+DISCSTATUSCHANID = int(os.getenv('DISCSTATUSCHANID'))
+
+DISCADMINROLEID = int(os.getenv('DISCADMINROLEID'))
+DISCPLAYERROLEID = int(os.getenv('DISCPLAYERROLEID'))
 
 bot = discord.Bot(command_prefix="!",intents=discord.Intents.all())
 app = Quart(__name__)
@@ -41,6 +51,47 @@ badCharacters = [' ', '/', '$', '>', '<', '@', '*', '%', ',', '"', "'", '\\', '|
 
 def logTime():
     return "[" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "]"
+    
+#Converts the url parameter from Byond's world.export GET requests into a Python dictionary, then removes the url encoding from "content"
+def urlCleaner(incurl):
+    incurl = incurl[(incurl.find('?')+1):]
+    incurl = incurl.split("&")
+    sortedurl = {}
+    for x in incurl:
+        newkey = x
+        newkey = newkey[:newkey.find("=")]
+        newvalue = x
+        newvalue = newvalue[newvalue.find("=")+1:]
+        sortedurl[newkey] = newvalue
+    sortedurl["content"] = sortedurl["content"].replace("+", " ")
+    sortedurl["content"] = unquote(sortedurl["content"])
+    return sortedurl
+   
+async def statusMsg(passdict):
+    channel = bot.get_channel(DISCSTATUSCHANID)
+    if passdict["ping"] == "true":
+        await channel.send(passdict["content"] + " <@&" + str(DISCPLAYERROLEID) + ">")
+    else:
+        await channel.send(passdict["content"])
+
+async def ickMsg(passdict):
+    channel = bot.get_channel(DISCMAINCHANID)
+    if passdict["ping"] == "true":
+        await channel.send(passdict["content"] + " <@&" + str(DISCPLAYERROLEID) + ">")
+    else:
+        await channel.send(passdict["content"])
+    
+async def ahelpMsg(passdict):
+    channel = bot.get_channel(DISCAHELPCHANID)
+    if passdict["ping"] == "true":
+        await channel.send(passdict["content"] + " <@&" + str(DISCADMINROLEID) + ">")
+    else:
+        await channel.send(passdict["content"])
+    
+
+# ----------------- #
+# Bot startup event #
+# ----------------- #
 
 @bot.event
 async def on_ready():
@@ -58,32 +109,24 @@ async def on_ready():
 # Byond listener   #
 # ---------------- #
 
-@app.route("/get")
-async def roundEnd():
+@app.route("/")
+async def byondListen():
     urlpayload = str(request.url)
-    print("- DEBUG: Received GET request with value: " + urlpayload)
-    urlpayload = urlpayload[(urlpayload.find('?')+1):]
-    if urlpayload[:urlpayload.find('&')] == ('pass=' + DISCPASS):
-        print("- DEBUG: DISCPASS accepted.")
-        urlpayload = urlpayload[urlpayload.find('&')+1:]
-        print("- DEBUG: urlpayload is now: " + urlpayload)
-        if urlpayload[:urlpayload.find('&')] == ('meta=' + 'server_status'):
-            channel = bot.get_channel(int(DISCSTATUSCHAN))
-            await channel.send("Status GET received!")
-            urlpayload = urlpayload[1:]
-            urlpayload = urlpayload[(urlpayload.find('&')+1):]
-            print("- DEBUG: urlpayload 0 to 17 reads: " + urlpayload[:17])
-            if urlpayload[:17] == ('content=' + '**The+gam'):
-                await channel.send("Round startconfirmed!")
-                return " "
-                
-            else:
-                return " "
-        else:
-            return " "
-    else:    
-        return " "
+    urldict = urlCleaner(urlpayload)
     
+    if urldict["pass"] == DISCPASS:
+        
+        if urldict["meta"] == DISCAHELPCHAN:
+            await ahelpMsg(urldict)
+        
+        elif urldict["meta"] == DISCSTATUSCHAN:
+            await statusMsg(urldict)
+            
+        elif urldict["meta"] == DISCMAINCHAN:
+            await ickMsg(urldict)
+            
+    return " "
+        
 
 # -------------- #
 # Slash commands #
@@ -91,13 +134,13 @@ async def roundEnd():
 
 @bot.command(name="help",description="Lists available commands.")
 async def slash_command(interaction:discord.Interaction):
-    await interaction.response.send_message('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: */help, /status, /who, /teststatus, /testwho, /resplist, /respadd, /respdel, /coinflip, /d6, /d20, [GitPRNumber], $ResponseName.')
+    await interaction.response.send_message('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: */help, /status, /who, /teststatus, /testwho, /resplist, /respadd, /respdel, /coinflip, /roll, [GitPRNumber], $ResponseName.')
     
 @bot.command(name="emergencykill",description="Ends the program abruptly.")
 @commands.has_permissions(administrator = True)
 async def slash_command(interaction:discord.Interaction):
-    await interaction.response.send_message("Process terminated.")
-    await exit()
+    await interaction.response.send_message("Process terminating.")
+    exit()
 
 @bot.command(name="status",description="Retrieves the status of the game server.")
 async def slash_command(interaction:discord.Interaction):
