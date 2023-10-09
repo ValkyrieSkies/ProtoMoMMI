@@ -13,30 +13,28 @@ from discord.ext import commands
 from dotenv import load_dotenv
 load_dotenv()
 
-#.env data
+#.env data - security stuff here
 TOKEN = os.getenv('TOKEN')
-
-#.env - server config assigned discord password
 DISCURL = os.getenv('DISCURL')
 DISCPASS = os.getenv('DISCPASS')
+DISCKILLPASS = os.getenv('DISCKILLPASS')
 
-DISCAHELPCHAN = "adminhelp"
-DISCAHELPCHANID = int(1021575914984841256)
-DISCMAINCHAN = "ick"
-DISCMAINCHANID = int(1021561127148195852)
-DISCSTATUSCHAN = "server_status"
-DISCSTATUSCHANID = int(259469791260180480)
+# The chan variables are the identifiers as sent in the "meta" field of byond's requests, the chanid variables are the channel's numerical discord IDs
+DISCAHELPCHAN = os.getenv('DISCAHELPCHAN')
+DISCAHELPCHANID = int(os.getenv('DISCAHELPCHANID'))
+DISCMAINCHAN = os.getenv('DISCMAINCHAN')
+DISCMAINCHANID = int(os.getenv('DISCMAINCHANID'))
+DISCSTATUSCHAN = os.getenv('DISCSTATUSCHAN')
+DISCSTATUSCHANID = int(os.getenv('DISCSTATUSCHANID'))
 
-DISCADMINROLEID = int(429378199470866453)
-DISCPLAYERROLEID = int(706629155965501470)
+DISCADMINROLEID = int(os.getenv('DISCADMINROLEID'))
+DISCPLAYERROLEID = int(os.getenv('DISCPLAYERROLEID'))
 
-bot = discord.Bot(command_prefix="!",intents=discord.Intents.all())
-app = Quart(__name__)
-
-statusurl = "https://ss13.moe/serverinfo/serverinfo.json"
-giturl = "https://github.com/vgstation-coders/vgstation13/"
-gitissuesurl = "https://api.github.com/repos/vgstation-coders/vgstation13/issues"
-gitprurl = "https://api.github.com/repos/vgstation-coders/vgstation13/pulls"
+#Github addresses for the PR fetch utility
+statusurl = os.getenv('GAMESTATUSURL')
+giturl = os.getenv('GITURL')
+gitissuesurl = os.getenv('GITISSUESURL')
+gitprurl = os.getenv('GITPRURL')
 
 #Local file locations
 dirname = os.path.dirname(__file__)
@@ -48,10 +46,14 @@ respfile = os.path.join(dirname, 'resp.json')
 #Characters disallowed in resp names
 badCharacters = [' ', '/', '$', '>', '<', '@', '*', '%', ',', '"', "'", '\\', '|', '[', ']', '{', '}', '(', ')', '^']
 
+bot = discord.Bot(command_prefix="!",intents=discord.Intents.all())
+app = Quart(__name__)
+
+#Shortcut for printing the time at the start of console log messages
 def logTime():
     return "[" + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "]"
     
-#Converts the url parameter from Byond's world.export GET requests into a Python dictionary, then removes the url encoding from "content"
+#Converts the url parameter from Byond's world.export GET requests into a list which it then converts into a Python dictionary, then removes the url encoding from "content" and returns the whole thing
 def urlCleaner(incurl):
     incurl = incurl[(incurl.find('?')+1):]
     incurl = incurl.split("&")
@@ -64,29 +66,7 @@ def urlCleaner(incurl):
         sortedurl[newkey] = newvalue
     sortedurl["content"] = sortedurl["content"].replace("+", " ")
     sortedurl["content"] = unquote(sortedurl["content"])
-    return sortedurl
-   
-async def statusMsg(passdict):
-    channel = bot.get_channel(DISCSTATUSCHANID)
-    if passdict["ping"] == "true":
-        await channel.send(passdict["content"] + " <@&" + str(DISCPLAYERROLEID) + ">")
-    else:
-        await channel.send(passdict["content"])
-
-async def ickMsg(passdict):
-    channel = bot.get_channel(DISCMAINCHANID)
-    if passdict["ping"] == "true":
-        await channel.send(passdict["content"] + " <@&" + str(DISCPLAYERROLEID) + ">")
-    else:
-        await channel.send(passdict["content"])
-    
-async def ahelpMsg(passdict):
-    channel = bot.get_channel(DISCAHELPCHANID)
-    if passdict["ping"] == "true":
-        await channel.send(passdict["content"] + " <@&" + str(DISCADMINROLEID) + ">")
-    else:
-        await channel.send(passdict["content"])
-    
+    return sortedurl  
 
 # ----------------- #
 # Bot startup event #
@@ -101,6 +81,7 @@ async def on_ready():
             respdict = json.load(incoming)
         print(logTime() + " - LOG: Loaded response file to dictionary successfully.")
     except:
+        #If you add a resp after a boot where the file failed to load, it will delete the old file if it exists. Oh well!
         respdict = {}
         print(logTime() + " - LOG: Failed to load response file to dictionary, starting with blank response dictionary.")
 
@@ -108,24 +89,49 @@ async def on_ready():
 # Byond listener   #
 # ---------------- #
 
+#This is the function Quart uses to listen for the incoming GET requests from Byond's world.export()
 @app.route("/")
 async def byondListen():
     urlpayload = str(request.url)
     urldict = urlCleaner(urlpayload)
-    
+    #"pass" is used to deny any data sent by anyone who doesn't have the configured discord_pass so they can't send arbitrary messages
     if urldict["pass"] == DISCPASS:
-        
+        #"meta" is the tag used to determine what channel to send to
         if urldict["meta"] == DISCAHELPCHAN:
             await ahelpMsg(urldict)
-        
         elif urldict["meta"] == DISCSTATUSCHAN:
             await statusMsg(urldict)
-            
         elif urldict["meta"] == DISCMAINCHAN:
             await ickMsg(urldict)
-            
     return " "
         
+#These methods post the "content" from each request to the relevant channel
+async def statusMsg(passdict):
+    channel = bot.get_channel(DISCSTATUSCHANID)
+    if passdict["ping"] == "true":
+        await channel.send(passdict["content"] + " <@&" + str(DISCPLAYERROLEID) + ">")
+    else:
+        await channel.send(passdict["content"])
+
+async def ickMsg(passdict):
+    channel = bot.get_channel(DISCMAINCHANID)
+    #This is the "kill_phrase" that MoMMI used to trigger the old channel lock whenever a round ended which triggered a hardcoded message from the MoMMI rather than using one embedded in content, so we make our own here
+    if passdict["content"] == "All your bases are belong to us.":
+        embedVar = discord.Embed(title= "A round has ended!", description="A new round will be starting soon at byond://game.ss13.moe:7777", color=0xfc0202, url="https://boards.4channel.org/vg/catalog#s=ss13")
+        embedVar.set_thumbnail(url="http://ss13.moe/img/vgstation-logo2.png")
+        await channel.send(embedVar)
+    elif passdict["ping"] == "true":
+        await channel.send(passdict["content"] + " <@&" + str(DISCPLAYERROLEID) + ">")
+    else:
+        await channel.send(passdict["content"])
+    
+async def ahelpMsg(passdict):
+    channel = bot.get_channel(DISCAHELPCHANID)
+    if passdict["ping"] == "true":
+        await channel.send(passdict["content"] + " <@&" + str(DISCADMINROLEID) + ">")
+    else:
+        await channel.send(passdict["content"])
+  
 
 # -------------- #
 # Slash commands #
@@ -133,13 +139,17 @@ async def byondListen():
 
 @bot.command(name="help",description="Lists available commands.")
 async def slash_command(interaction:discord.Interaction):
-    await interaction.response.send_message('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have nearly as many features as the old one, but here\'s what I **can** do: */help, /status, /who, /teststatus, /testwho, /resplist, /respadd, /respdel, /coinflip, /roll, [GitPRNumber], $ResponseName.')
+    await interaction.response.send_message('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have quite as many features as the old one, but here\'s what I **can** do: */help, /status, /who, /teststatus, /testwho, /resplist, /respadd, /respdel, /coinflip, /roll, [GitPRNumber], $ResponseName.')
     
-@bot.command(name="emergencykill",description="Ends the program abruptly.")
+#Windows CMD didn't play nicely with killing the task via keyboard interrupt, so I added this command to allow killing the bot via Discord. Admin only AND requires the use of a password defined in the .env
+@bot.command(name="emergencykill",description="Terminates the bot's process via Discord.")
 @commands.has_permissions(administrator = True)
-async def slash_command(interaction:discord.Interaction):
-    await interaction.response.send_message("Process terminating.")
-    exit()
+async def slash_command(ctx, killphrase: discord.Option(discord.SlashCommandOptionType.string)):
+    if killphrase == DISCKILLPASS:
+        await ctx.respond(f"Killphrase confirmed, terminating process.")
+        exit()
+    else:
+        await ctx.respond(f"Incorrect killphrase.", ephemeral=True)
 
 @bot.command(name="status",description="Retrieves the status of the game server.")
 async def slash_command(interaction:discord.Interaction):
