@@ -13,23 +13,22 @@ from discord.ext import commands
 from dotenv import load_dotenv
 load_dotenv()
 
-
 #.env data
 TOKEN = os.getenv('TOKEN')
 
 #.env - server config assigned discord password
+DISCURL = os.getenv('DISCURL')
 DISCPASS = os.getenv('DISCPASS')
 
-#.env - discord Channel IDs
-DISCAHELPCHAN = os.getenv('DISCAHELPCHAN')
-DISCAHELPCHANID = int(os.getenv('DISCAHELPCHANID'))
-DISCMAINCHAN = os.getenv('DISCMAINCHAN')
-DISCMAINCHANID = int(os.getenv('DISCMAINCHANID'))
-DISCSTATUSCHAN = os.getenv('DISCSTATUSCHAN')
-DISCSTATUSCHANID = int(os.getenv('DISCSTATUSCHANID'))
+DISCAHELPCHAN = "adminhelp"
+DISCAHELPCHANID = int(1021575914984841256)
+DISCMAINCHAN = "ick"
+DISCMAINCHANID = int(1021561127148195852)
+DISCSTATUSCHAN = "server_status"
+DISCSTATUSCHANID = int(259469791260180480)
 
-DISCADMINROLEID = int(os.getenv('DISCADMINROLEID'))
-DISCPLAYERROLEID = int(os.getenv('DISCPLAYERROLEID'))
+DISCADMINROLEID = int(429378199470866453)
+DISCPLAYERROLEID = int(706629155965501470)
 
 bot = discord.Bot(command_prefix="!",intents=discord.Intents.all())
 app = Quart(__name__)

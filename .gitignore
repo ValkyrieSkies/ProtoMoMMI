@@ -1,8 +1,5 @@
-
-.env
 *.bak
 localstatus.json
 localissues.json
 localpr.json
 resp.json
-resp.pkl
