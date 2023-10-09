@@ -16,6 +16,7 @@ load_dotenv()
 #.env data - security stuff here
 TOKEN = os.getenv('TOKEN')
 DISCURL = os.getenv('DISCURL')
+LISTENPORT = os.getenv('LISTENPORT')
 DISCPASS = os.getenv('DISCPASS')
 DISCKILLPASS = os.getenv('DISCKILLPASS')
 
@@ -415,7 +416,7 @@ async def on_message(message):
             except:
                 return
      
-bot.loop.create_task(app.run_task('127.0.0.1', '5000'))
+bot.loop.create_task(app.run_task(DISCURL, LISTENPORT))
      
 #create a file named ".env" in the same folder as this and just add a line that's "TOKEN=yourtokenhere"
 bot.run(TOKEN)
