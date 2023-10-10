@@ -149,7 +149,7 @@ async def ahelpMsg(passdict):
 
 @bot.command(name="help",description="Lists available commands.")
 async def slash_command(interaction:discord.Interaction):
-    await interaction.response.send_message('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have quite as many features as the old one, but here\'s what I **can** do: */help, /status, /who, /teststatus, /testwho, /resplist, /respadd, /respdel, /coinflip, /roll, [GitPRNumber], $ResponseName.')
+    await interaction.response.send_message('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have quite as many features as the old one, but here\'s what I **can** do: */help, /status, /who, /teststatus, /testwho, /resplist, /coinflip, /roll, [GitPRNumber], and $ResponseName. Admins also have access to /respadd, /respdel, and /emergencykill.')
     
 #Windows CMD didn't play nicely with killing the task via keyboard interrupt while Quart is running, so I added this command to allow killing the bot via Discord. Admin only AND requires the use of a password defined in the .env
 @bot.command(name="emergencykill",description="Terminates the bot's process via Discord.")
