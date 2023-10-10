@@ -3,3 +3,4 @@ localstatus.json
 localissues.json
 localpr.json
 resp.json
+BackupEnv/LocalTest/.env
