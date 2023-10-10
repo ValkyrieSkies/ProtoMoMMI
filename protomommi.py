@@ -13,9 +13,11 @@ from discord.ext import commands
 from dotenv import load_dotenv
 load_dotenv()
 
-#.env data - security stuff here
+# -------------- #
+# .env variables #
+# -------------- #
+
 TOKEN = os.getenv('TOKEN')
-DISCURL = os.getenv('DISCURL')
 LISTENPORT = os.getenv('LISTENPORT')
 DISCPASS = os.getenv('DISCPASS')
 DISCKILLPASS = os.getenv('DISCKILLPASS')
@@ -31,8 +33,10 @@ DISCSTATUSCHANID = int(os.getenv('DISCSTATUSCHANID'))
 DISCADMINROLEID = int(os.getenv('DISCADMINROLEID'))
 DISCPLAYERROLEID = int(os.getenv('DISCPLAYERROLEID'))
 
-#Github addresses for the PR fetch utility
+#/vg/station's public server status
 statusurl = os.getenv('GAMESTATUSURL')
+
+#Github addresses for the PR fetch utility
 giturl = os.getenv('GITURL')
 gitissuesurl = os.getenv('GITISSUESURL')
 gitprurl = os.getenv('GITPRURL')
@@ -95,7 +99,11 @@ async def on_ready():
 @app.route("/")
 async def byondListen():
     urlpayload = str(request.url)
-    urldict = urlCleaner(urlpayload)
+    #If an exception is thrown while running urlCleaner, then it wasn't a payload we wanted in the first place
+    try:
+        urldict = urlCleaner(urlpayload)
+    except:
+        return " "
     #"pass" is used to deny any data sent by anyone who doesn't have the configured discord_pass so they can't send arbitrary messages
     if urldict["pass"] == DISCPASS:
         #"meta" is the tag used to determine what channel to send to
@@ -143,11 +151,12 @@ async def ahelpMsg(passdict):
 async def slash_command(interaction:discord.Interaction):
     await interaction.response.send_message('Ping! I\'m the temporary replacement MoMMI seeing as the old one\'s gone. I don\'t have quite as many features as the old one, but here\'s what I **can** do: */help, /status, /who, /teststatus, /testwho, /resplist, /respadd, /respdel, /coinflip, /roll, [GitPRNumber], $ResponseName.')
     
-#Windows CMD didn't play nicely with killing the task via keyboard interrupt, so I added this command to allow killing the bot via Discord. Admin only AND requires the use of a password defined in the .env
+#Windows CMD didn't play nicely with killing the task via keyboard interrupt while Quart is running, so I added this command to allow killing the bot via Discord. Admin only AND requires the use of a password defined in the .env
 @bot.command(name="emergencykill",description="Terminates the bot's process via Discord.")
 @commands.has_permissions(administrator = True)
 async def slash_command(ctx, killphrase: discord.Option(discord.SlashCommandOptionType.string)):
     if killphrase == DISCKILLPASS:
+        print(logTime() + "- LOG: Bot killswitch successfully triggered by user " + str(ctx.author.id))
         await ctx.respond(f"Killphrase confirmed, terminating process.")
         exit()
     else:
@@ -417,7 +426,8 @@ async def on_message(message):
             except:
                 return
      
-bot.loop.create_task(app.run_task(DISCURL, LISTENPORT))
+#0.0.0.0 makes Quart listen for external requests, just make sure LISTENPORT is assigned to an accessible port
+bot.loop.create_task(app.run_task("0.0.0.0", LISTENPORT))
      
 #create a file named ".env" in the same folder as this and just add a line that's "TOKEN=yourtokenhere"
 bot.run(TOKEN)
