@@ -33,7 +33,8 @@ DISCSTATUSCHANID = int(os.getenv('DISCSTATUSCHANID'))
 DISCADMINROLEID = int(os.getenv('DISCADMINROLEID'))
 DISCPLAYERROLEID = int(os.getenv('DISCPLAYERROLEID'))
 
-#/vg/station's public server status
+#/vg/station's server stuff
+SERVERICON = os.getenv('SERVERICON')
 statusurl = os.getenv('GAMESTATUSURL')
 
 #Github addresses for the PR fetch utility
@@ -128,8 +129,8 @@ async def ickMsg(passdict):
     #This is the "kill_phrase" that MoMMI used to trigger the old channel lock whenever a round ended which triggered a hardcoded message from the MoMMI rather than using one embedded in content, so we make our own here
     if passdict["content"] == "All your bases are belong to us.":
         embedVar = discord.Embed(title= "A round has ended!", description="A new round will be starting soon at byond://game.ss13.moe:7777", color=0xfc0202, url="https://boards.4channel.org/vg/catalog#s=ss13")
-        embedVar.set_thumbnail(url="http://ss13.moe/img/vgstation-logo2.png")
-        await channel.send(embedVar)
+        embedVar.set_thumbnail(url=SERVERICON)
+        await channel.send(embed=embedVar)
     elif passdict["ping"] == "true":
         await channel.send(passdict["content"] + " <@&" + str(DISCPLAYERROLEID) + ">")
     else:
@@ -404,7 +405,7 @@ async def on_message(message):
                 #Here's where the embed is actually constructed
                 embedVar = discord.Embed(title= "[" + prnumber + "] " + postdict["title"], description=embeddesc, color=embedcolor, url=postdict["html_url"])
                 embedVar.set_author(name=postdict["user"]["login"], url=postdict["user"]["html_url"], icon_url=postdict["user"]["avatar_url"])
-                embedVar.set_thumbnail(url="http://ss13.moe/img/vgstation-logo2.png")
+                embedVar.set_thumbnail(url=SERVERICON)
                 embedVar.add_field(name="Created", value=embedtime, inline=False)
                 embedVar.add_field(name="Comments", value=postdict["comments"], inline=True)
                 embedVar.add_field(name="Upvotes", value=postdict["reactions"]["+1"], inline=True)
