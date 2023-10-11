@@ -21,6 +21,7 @@ TOKEN = os.getenv('TOKEN')
 LISTENPORT = os.getenv('LISTENPORT')
 DISCPASS = os.getenv('DISCPASS')
 DISCKILLPASS = os.getenv('DISCKILLPASS')
+ROUNDENDPHRASE = os.getenv('ROUNDENDPHRASE')
 
 # The chan variables are the identifiers as sent in the "meta" field of byond's requests, the chanid variables are the channel's numerical discord IDs
 DISCAHELPCHAN = os.getenv('DISCAHELPCHAN')
@@ -35,12 +36,12 @@ DISCPLAYERROLEID = int(os.getenv('DISCPLAYERROLEID'))
 
 #/vg/station's server stuff
 SERVERICON = os.getenv('SERVERICON')
-statusurl = os.getenv('GAMESTATUSURL')
+GAMESTATUSURL = os.getenv('GAMESTATUSURL')
 
 #Github addresses for the PR fetch utility
-giturl = os.getenv('GITURL')
-gitissuesurl = os.getenv('GITISSUESURL')
-gitprurl = os.getenv('GITPRURL')
+GITURL = os.getenv('GITURL')
+GITISSUESURL = os.getenv('GITISSUESURL')
+GITPRURL = os.getenv('GITPRURL')
 
 #Local file locations
 dirname = os.path.dirname(__file__)
@@ -127,7 +128,7 @@ async def statusMsg(passdict):
 async def ickMsg(passdict):
     channel = bot.get_channel(DISCMAINCHANID)
     #This is the "kill_phrase" that MoMMI used to trigger the old channel lock whenever a round ended which triggered a hardcoded message from the MoMMI rather than using one embedded in content, so we make our own here
-    if passdict["content"] == "All your bases are belong to us.":
+    if passdict["content"] == ROUNDENDPHRASE:
         embedVar = discord.Embed(title= "A round has ended!", description="A new round will be starting soon at byond://game.ss13.moe:7777", color=0xfc0202, url="https://boards.4channel.org/vg/catalog#s=ss13")
         embedVar.set_thumbnail(url=SERVERICON)
         await channel.send(embed=embedVar)
@@ -170,7 +171,7 @@ async def slash_command(interaction:discord.Interaction):
         os.remove(localstatusfile)
     except OSError:
         pass
-    wget.download(statusurl, 'localstatus.json')
+    wget.download(GAMESTATUSURL, 'localstatus.json')
     statusdict = json.load(open('localstatus.json', 'r'))
     outputmsg = '**' + statusdict[0]["players"] + '** players online, Current Map is **' + statusdict[0]["map_name"] + '** on **' + statusdict[0]["mode"] + '**, Station Time: **' + statusdict[0]["station_time"] + '**'
     outputmsg = outputmsg.replace("+", " ")
@@ -183,7 +184,7 @@ async def slash_command(interaction:discord.Interaction):
         os.remove(localstatusfile)
     except OSError:
         pass
-    wget.download(statusurl, 'localstatus.json')
+    wget.download(GAMESTATUSURL, 'localstatus.json')
     statusdict = json.load(open('localstatus.json', 'r'))
     outputmsg = '[Test Server] **' + statusdict[1]["players"] + '** players online, Current Map is **' + statusdict[1]["map_name"] + '** on **' + statusdict[1]["mode"] + '**, Station Time: **' + statusdict[1]["station_time"] + '**'
     outputmsg = outputmsg.replace("+", " ")
@@ -196,7 +197,7 @@ async def slash_command(interaction:discord.Interaction):
         os.remove(localstatusfile)
     except OSError:
         pass
-    wget.download(statusurl, 'localstatus.json')
+    wget.download(GAMESTATUSURL, 'localstatus.json')
     statusdict = json.load(open('localstatus.json', 'r'))
     playercount = int(statusdict[0]["players"])
     if playercount > 0:
@@ -219,7 +220,7 @@ async def slash_command(interaction:discord.Interaction):
         os.remove(localstatusfile)
     except OSError:
         pass
-    wget.download(statusurl, 'localstatus.json')
+    wget.download(GAMESTATUSURL, 'localstatus.json')
     statusdict = json.load(open('localstatus.json', 'r'))
     playercount = int(statusdict[1]["players"])
     if playercount > 0:    
@@ -241,15 +242,14 @@ async def slash_command(interaction:discord.Interaction):
 @bot.command(name="coinflip",description="Flips a coin.")
 async def slash_command(interaction:discord.Interaction):
     if(random.randint(1, 2) == 1):
-        outputmsg = 'Heads'
+        await interaction.response.send_message('🪙 Flipping a Coin: It\'s **heads**!')
     else:
-        outputmsg = 'Tails'
-    await interaction.response.send_message('🪙 Flipping a Coin: It\'s **' + outputmsg + '**!')
-
+        await interaction.response.send_message('🪙 Flipping a Coin: It\'s **tails**!')
+    
 @bot.command(name="roll",description="Roll a number of specified dice.")
 async def slash_command(ctx, diceamount: discord.Option(discord.SlashCommandOptionType.integer), dicesides: discord.Option(discord.SlashCommandOptionType.integer)):
     if diceamount > 100:
-        await ctx.respond("Fuck off you don't need that many dice.", ephemeral=True)
+        await ctx.respond("No more than 100 dice at a time for sanity's sake.", ephemeral=True)
 
     elif dicesides > 1000:
         await ctx.respond("No, nothing larger than a d1000.", ephemeral=True)
@@ -264,16 +264,58 @@ async def slash_command(ctx, diceamount: discord.Option(discord.SlashCommandOpti
         i = 0
         currentval = 0
         runtotal = 0
-        outputmsg = "**"
+        outputmsg = ""
         while i < diceamount - 1:
             currentval = random.randint(1, dicesides)
             runtotal = runtotal + currentval
-            outputmsg = outputmsg + str(currentval) + ", "
+            if currentval == dicesides:
+                outputmsg = outputmsg + "**" + str(currentval) + "**, "
+            else: 
+                outputmsg = outputmsg + str(currentval) + ", "
             i = i + 1
         currentval = random.randint(1, dicesides)
         runtotal = runtotal + currentval
-        outputmsg = outputmsg + str(currentval) + "**"
+        outputmsg = outputmsg + str(currentval)
         await ctx.respond("🎲 Rolling " + str(diceamount) + "d" + str(dicesides) + ", results: " + outputmsg + ", sum total = **" + str(runtotal) + "**")
+            
+@bot.command(name="rollexp",description="Roll a number of specified exploding dice.")
+async def slash_command(ctx, diceamount: discord.Option(discord.SlashCommandOptionType.integer), dicesides: discord.Option(discord.SlashCommandOptionType.integer)):
+    if diceamount > 20:
+        await ctx.respond("No more than 20 explosive dice at a time for sanity's sake.", ephemeral=True)
+
+    elif dicesides > 1000:
+        await ctx.respond("No, nothing larger than a d1000.", ephemeral=True)
+      
+    elif diceamount <= 0:
+        await ctx.respond("You can't roll less than one dice bro.", ephemeral=True)
+        
+    elif dicesides <= 0:
+        await ctx.respond("No, you can't have a dice with no sides.", ephemeral=True)
+    
+    else:  
+        i = 0
+        currentval = 0
+        runtotal = 0
+        outputmsg = ""
+        while i < diceamount - 1:
+            currentval = random.randint(1, dicesides)
+            runtotal = runtotal + currentval
+            if currentval == dicesides:
+                outputmsg = outputmsg + "**" + str(currentval) + "** ["
+                while currentval == dicesides:
+                    currentval = random.randint(1, dicesides)
+                    runtotal = runtotal + currentval
+                    if currentval == dicesides:
+                        outputmsg = outputmsg + "**" + str(currentval) + "**, "
+                    else: 
+                        outputmsg = outputmsg + str(currentval) + "], "
+            else: 
+                outputmsg = outputmsg + str(currentval) + ", "
+            i = i + 1
+        currentval = random.randint(1, dicesides)
+        runtotal = runtotal + currentval
+        outputmsg = outputmsg + str(currentval)
+        await ctx.respond("💥🎲 Rolling " + str(diceamount) + "d" + str(dicesides) + ", results: " + outputmsg + ", sum total = **" + str(runtotal) + "**")
     
 # Resp related commands here
 
@@ -353,13 +395,13 @@ async def on_message(message):
             os.remove(localissuesfile)
         except OSError:
             pass
-        wget.download(gitissuesurl, 'localissues.json')
+        wget.download(GITISSUESURL, 'localissues.json')
         issuedict = json.load(open('localissues.json', 'r', encoding="utf-8"))
         try:
             os.remove(localprfile)
         except OSError:
             pass
-        wget.download(gitprurl, 'localpr.json')
+        wget.download(GITPRURL, 'localpr.json')
         prdict = json.load(open('localpr.json', 'r', encoding="utf-8"))
         if int(prdict[0]["number"]) >= int(issuedict[0]["number"]):
             gittotal = prdict[0]["number"]
@@ -370,7 +412,7 @@ async def on_message(message):
         if int(prnumber) <= gittotal and int(prnumber) > 0:
             try:
                 #This is where we actually download the requested post once it's established it's viable
-                gitposturl = gitissuesurl + '/' + prnumber
+                gitposturl = GITISSUESURL + '/' + prnumber
                 try:
                     os.remove(localissuesfile)
                 except OSError:
