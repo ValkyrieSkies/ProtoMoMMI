@@ -13,9 +13,9 @@ from discord.ext import commands
 from dotenv import load_dotenv
 load_dotenv()
 
-# -------------- #
-# .env variables #
-# -------------- #
+### ============== ###
+### .env variables ###
+### ============== ###
 
 TOKEN = os.getenv('TOKEN')
 LISTENPORT = os.getenv('LISTENPORT')
@@ -41,17 +41,18 @@ GAMESTATUSURL = os.getenv('GAMESTATUSURL')
 #Github addresses for the PR fetch utility
 GITURL = os.getenv('GITURL')
 GITISSUESURL = os.getenv('GITISSUESURL')
-GITPRURL = os.getenv('GITPRURL')
+
+### =============== ###
+### Other Variables ###
+### =============== ###
 
 #Local file locations
 dirname = os.path.dirname(__file__)
-localstatusfile = os.path.join(dirname, 'localstatus.json')
-localissuesfile = os.path.join(dirname, 'localissues.json')
-localprfile = os.path.join(dirname, 'localpr.json')
+localgitfile = os.path.join(dirname, 'localgit.json')
 respfile = os.path.join(dirname, 'resp.json')
 
 #Characters disallowed in resp names
-badCharacters = [' ', '/', '$', '>', '<', '@', '*', '%', ',', '"', "'", '\\', '|', '[', ']', '{', '}', '(', ')', '^']
+badCharacters = [' ', '/', '$', '>', '<', '@', '*', '%', ',', '"', "'", '\\', '|', '[', ']', '{', '}', '(', ')', '^', ':', ';']
 
 #bot is the discord bot, app is the quart server
 bot = discord.Bot(command_prefix="!",intents=discord.Intents.all())
@@ -76,9 +77,9 @@ def urlCleaner(incurl):
     sortedurl["content"] = unquote(sortedurl["content"])
     return sortedurl  
 
-# ----------------- #
-# Bot startup event #
-# ----------------- #
+### ================= ###
+### Bot startup event ###
+### ================= ###
 
 @bot.event
 async def on_ready():
@@ -93,9 +94,9 @@ async def on_ready():
         respdict = {}
         print(logTime() + " - LOG: Failed to load response file to dictionary, starting with blank response dictionary.")
 
-# ---------------- #
-# Byond listener   #
-# ---------------- #
+### ================ ###
+### Byond listener   ###
+### ================ ###
 
 #This is the function Quart uses to listen for the incoming GET requests from Byond's world.export()
 @app.route("/")
@@ -127,12 +128,7 @@ async def statusMsg(passdict):
 
 async def ickMsg(passdict):
     channel = bot.get_channel(DISCMAINCHANID)
-    #This is the "kill_phrase" that MoMMI used to trigger the old channel lock whenever a round ended which triggered a hardcoded message from the MoMMI rather than using one embedded in content, so we make our own here
-    if passdict["content"] == ROUNDENDPHRASE:
-        embedVar = discord.Embed(title= "A round has ended!", description="A new round will be starting soon at byond://game.ss13.moe:7777", color=0xfc0202, url="https://boards.4channel.org/vg/catalog#s=ss13")
-        embedVar.set_thumbnail(url=SERVERICON)
-        await channel.send(embed=embedVar)
-    elif passdict["ping"] == "true":
+    if passdict["ping"] == "true":
         await channel.send(passdict["content"] + " <@&" + str(DISCPLAYERROLEID) + ">")
     else:
         await channel.send(passdict["content"])
@@ -145,9 +141,9 @@ async def ahelpMsg(passdict):
         await channel.send(passdict["content"])
   
 
-# -------------- #
-# Slash commands #
-# -------------- #
+### ============== ###
+### Slash commands ###
+### ============== ###
 
 @bot.command(name="help",description="Lists available commands.")
 async def slash_command(interaction:discord.Interaction):
@@ -237,15 +233,18 @@ async def slash_command(interaction:discord.Interaction):
     else:
         await interaction.response.send_message('[Test Server] No players are currently online.')
 
-# Gimmick commands here
+# ---------------- #
+# Gimmick commands #
+# ---------------- #
 
 @bot.command(name="coinflip",description="Flips a coin.")
 async def slash_command(interaction:discord.Interaction):
     if(random.randint(1, 2) == 1):
-        await interaction.response.send_message('🪙 Flipping a Coin: It\'s **heads**!')
+        outputmsg = 'Heads'
     else:
-        await interaction.response.send_message('🪙 Flipping a Coin: It\'s **tails**!')
-    
+        outputmsg = 'Tails'
+    await interaction.response.send_message('🪙 Flipping a Coin: It\'s **' + outputmsg + '**!')
+
 @bot.command(name="roll",description="Roll a number of specified dice.")
 async def slash_command(ctx, diceamount: discord.Option(discord.SlashCommandOptionType.integer), dicesides: discord.Option(discord.SlashCommandOptionType.integer)):
     if diceamount > 100:
@@ -317,7 +316,9 @@ async def slash_command(ctx, diceamount: discord.Option(discord.SlashCommandOpti
         outputmsg = outputmsg + str(currentval)
         await ctx.respond("💥🎲 Rolling " + str(diceamount) + "d" + str(dicesides) + ", results: " + outputmsg + ", sum total = **" + str(runtotal) + "**")
     
-# Resp related commands here
+# ------------- #
+# Resp Commands #
+# ------------- #
 
 @bot.command(name="resplist",description="Lists available responses.")
 async def slash_command(interaction:discord.Interaction):
@@ -371,96 +372,82 @@ async def slash_command(ctx, responsename: discord.Option(discord.SlashCommandOp
     except MissingPermissions:
         await ctx.respond(f"Administrator privileges are required to modify responses.", ephemeral=True)
         
-# ----------------------------------- #
-# Non-Slash Commands below this point #
-# ----------------------------------- #
+### =================================== ###
+### Non-Slash Commands below this point ###
+### =================================== ###
 
 @bot.event
 async def on_message(message):
+    #Ignore messages from self and other bots to prevent the resonance cascade
     if message.author == bot.user:
         return
-        
     if message.author.bot:
         return
 
-    #Github PR fetcher - currently ignores messages with numbers larger than 5 digits, will have to change if vg reaches over 100,000 PRs/Issues I guess
-        # TODO: Make it so that it can pick up [#####] messages within messages rather than just as standalone requests
-    if message.content.startswith('[') and message.content.endswith(']') and len(message.content) <= 7:
-        prnumber = message.content
-        prnumber = prnumber.replace('[', '')
-        prnumber = prnumber.replace(']', '')
+    #Github PR fetcher - If you ever end up on a repo with over 99,999 combined PRs and Issues, you'll have to change that < 6 to a < 7
+    if message.content.split('[')[-1].split(']')[0].isnumeric() and len(message.content.split('[')[-1].split(']')[0]) < 6:
+        prnumber = message.content.split('[')[-1].split(']')[0]
+        gitposturl = GITISSUESURL + '/' + prnumber
         
-        # The tldr of what's happening here is that the bot pulls the json files of the latest issues and PRs and checks what the highest numbered one is so the bot can ignore requests for PRs/Issues that don't exist
         try:
-            os.remove(localissuesfile)
+            os.remove(localgitfile)
         except OSError:
             pass
-        wget.download(GITISSUESURL, 'localissues.json')
-        issuedict = json.load(open('localissues.json', 'r', encoding="utf-8"))
         try:
-            os.remove(localprfile)
-        except OSError:
-            pass
-        wget.download(GITPRURL, 'localpr.json')
-        prdict = json.load(open('localpr.json', 'r', encoding="utf-8"))
-        if int(prdict[0]["number"]) >= int(issuedict[0]["number"]):
-            gittotal = prdict[0]["number"]
-        else:
-            gittotal = issuedict[0]["number"]
-        
-        #Makes sure the requested PR/Issue is actually in the scop of what's on the repo and skips if it's not
-        if int(prnumber) <= gittotal and int(prnumber) > 0:
-            try:
-                #This is where we actually download the requested post once it's established it's viable
-                gitposturl = GITISSUESURL + '/' + prnumber
-                try:
-                    os.remove(localissuesfile)
-                except OSError:
-                    pass
-                wget.download(gitposturl, 'localissues.json')
-                postdict = json.load(open('localissues.json', 'r', encoding="utf-8"))
-                
-                #Strips styling effects and reformats some common blocks to look nicer on an embed
-                embeddesc = re.sub('\n<!--.*?-->','', postdict["body"], flags=re.DOTALL)
-                embeddesc = embeddesc.replace("\r", "")
-                embeddesc = embeddesc.replace("\n", "")
-                embeddesc = embeddesc.replace("# Revision", "\nRevision: ")
-                embeddesc = embeddesc.replace("# Description", " - Description: ")
-                embeddesc = embeddesc.replace("# Steps to Reproduce", " - Steps to Reproduce: ")
-                embeddesc = embeddesc.replace("# What you Expected", " - What you Expected: ")
-                embeddesc = embeddesc.replace("# What Actually Happened", " - What Actually Happened: ")
-                embeddesc = embeddesc.replace("#", "")
-                embedcolor = 0x03bf16
-                embedtime = postdict["created_at"]
-                embedtime = embedtime.replace('T',' ')
-                embedtime = embedtime.replace('Z','')
-                
-                #Changes the colour to red rather than green if it's closed
-                    #TODO: Implement a better check system so merges can be coloured purple instead
-                if postdict["state"] != "open":
-                    embedcolor = 0xfc0202
-                        
-                #If the request is verbose, shrinks it down to 512 characters and adds an ellipses
-                if len(postdict["body"]) >= 512:
-                    embeddesc = embeddesc[:512] + '...'
-                    
-                #Here's where the embed is actually constructed
-                embedVar = discord.Embed(title= "[" + prnumber + "] " + postdict["title"], description=embeddesc, color=embedcolor, url=postdict["html_url"])
-                embedVar.set_author(name=postdict["user"]["login"], url=postdict["user"]["html_url"], icon_url=postdict["user"]["avatar_url"])
-                embedVar.set_thumbnail(url=SERVERICON)
-                embedVar.add_field(name="Created", value=embedtime, inline=False)
-                embedVar.add_field(name="Comments", value=postdict["comments"], inline=True)
-                embedVar.add_field(name="Upvotes", value=postdict["reactions"]["+1"], inline=True)
-                embedVar.add_field(name="Downvotes", value=postdict["reactions"]["-1"], inline=True)
-                await message.channel.send(embed=embedVar)
-            except:
-                await message.channel.send("Unable to fetch PR. It's possible the rate limit has been exceeded.")
-                return
-        else:
+            wget.download(gitposturl, 'localgit.json')
+            postdict = json.load(open('localgit.json', 'r', encoding="utf-8"))
+        except:
             return
+        
+        #Making sure there's an actual valid file that came through
+        if not("number" in postdict):
+            return
+        else:
+            #Strips styling effects and reformats some common blocks to look nicer on an embed
+            embeddesc = re.sub('\n<!--.*?-->','', postdict["body"], flags=re.DOTALL)
+            embeddesc = embeddesc.replace("\r", "")
+            embeddesc = embeddesc.replace("\n", "")
+            embeddesc = embeddesc.replace("# What this does", " - What this does: ")
+            embeddesc = embeddesc.replace("# Why it's good", " - Why it's good: ")
+            embeddesc = embeddesc.replace("# Changelog", "- Changelog: ")
+            embeddesc = embeddesc.replace("# Revision", "\nRevision: ")
+            embeddesc = embeddesc.replace("# Description", " - Description: ")
+            embeddesc = embeddesc.replace("# Steps to Reproduce", " - Steps to Reproduce: ")
+            embeddesc = embeddesc.replace("# What you Expected", " - What you Expected: ")
+            embeddesc = embeddesc.replace("# What Actually Happened", " - What Actually Happened: ")
+            embeddesc = embeddesc.replace("#", "")
+            embedtime = postdict["created_at"]
+            embedtime = embedtime.replace('T',' ')
+            embedtime = embedtime.replace('Z','')
+                
+            #Changes the colour to green if open or purple if merged, otherwise it stays red
+            embedcolour = 0xDA3633
+            if postdict["state"] == "open":
+                embedcolour = 0x238636
+            elif "pull_request" in postdict:   
+                if "merged_at" in postdict.get("pull_request", {}):
+                    if postdict["pull_request"]["merged_at"] != None:
+                        embedcolour = 0x8957E5
+                
+            #If the request is verbose, shrinks it down to 512 characters and adds an ellipses
+            if len(postdict["body"]) >= 512:
+                embeddesc = embeddesc[:512] + '...'
+                    
+            #Here's where the embed is actually constructed
+            embedVar = discord.Embed(title= "[" + prnumber + "] " + postdict["title"], description=embeddesc, color=embedcolour, url=postdict["html_url"])
+            embedVar.set_author(name=postdict["user"]["login"], url=postdict["user"]["html_url"], icon_url=postdict["user"]["avatar_url"])
+            if SERVERICON != None:
+                embedVar.set_thumbnail(url=SERVERICON)
+            embedVar.add_field(name="Created", value=embedtime, inline=False)
+            embedVar.add_field(name="Comments", value=postdict["comments"], inline=True)
+            embedVar.add_field(name="Upvotes", value=postdict["reactions"]["+1"], inline=True)
+            embedVar.add_field(name="Downvotes", value=postdict["reactions"]["-1"], inline=True)
+            await message.channel.send(embed=embedVar)
+            return
+        
 
     #Response poster
-    elif message.content.startswith('$'):
+    if message.content.startswith('$'):
         if any([x in message.content[1:] for x in badCharacters]):
             return
         else:
