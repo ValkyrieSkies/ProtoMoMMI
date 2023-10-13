@@ -1,5 +1,2 @@
 *.bak
-localstatus.json
-localissues.json
-localpr.json
-resp.json
+*.json
