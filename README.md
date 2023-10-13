@@ -1,6 +1,6 @@
 ###### **This branch is specifically for /vg/station13's server**. If you want to run this bot for your own fork, there will be a specific branch for that *soon*.
 
-# ![protomommi image](https://github.com/ValkyrieSkies/vg-protomommi/blob/vg-hardcoded/profileimage.png?raw=true) vg-protomommi
+# ![protomommi image](https://github.com/ValkyrieSkies/vg-protomommi/blob/vg-hardcoded/avatar.png?raw=true) vg-protomommi
 A discord bot for the /vg/station13 Discord Server. Provides functions such as fetching the current server info, fetching the list of players online, listening for status updates from the game server and posting them to set discord channels, generating infoboxes for requested PRs/Issues on the /vg/station13 github, and a few other bonus fun features such as dice rolling and a programmable persistent response dictionary.
 
 # Required Python packages
